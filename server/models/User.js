@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String, required: true, select: false },
     phone: {
       type: String,
       required: true,
@@ -124,24 +124,29 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    // models/User.js  (replace only the paymentDetails block)
+
     paymentDetails: {
-      accountType: {
-        type: String,
-        enum: ["bkash", "nagad", "bank", "rocket"],
-      },
+      accountType: { type: String, enum: ["bkash", "nagad", "bank", "rocket"] },
       accountNumber: String,
       accountName: String,
       bankName: String, // Only for bank
       routingNumber: String, // Only for bank
-      verified: {
-        type: Boolean,
-        default: false,
+
+      // 🔁 NEW: status replaces 'verified'
+      status: {
+        type: String,
+        enum: ["pending", "approved", "rejected"],
+        default: "pending",
       },
-      addedAt: {
-        type: Date,
-        default: Date.now,
-      },
+      // optional review meta
+      reviewReason: String,
+      reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      reviewedAt: Date,
+
+      addedAt: { type: Date, default: Date.now },
     },
+
     premium: {
       isActive: { type: Boolean, default: false },
       expiresAt: Date,
@@ -174,5 +179,21 @@ userSchema.pre("save", async function (next) {
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+// models/User.js (under schema definition)
+userSchema.pre("save", function (next) {
+  if (
+    this.isModified("paymentDetails.accountType") ||
+    this.isModified("paymentDetails.accountNumber") ||
+    this.isModified("paymentDetails.accountName") ||
+    this.isModified("paymentDetails.bankName") ||
+    this.isModified("paymentDetails.routingNumber")
+  ) {
+    this.paymentDetails.status = "pending";
+    this.paymentDetails.reviewReason = undefined;
+    this.paymentDetails.reviewedBy = undefined;
+    this.paymentDetails.reviewedAt = undefined;
+  }
+  next();
+});
 
 module.exports = mongoose.model("User", userSchema);

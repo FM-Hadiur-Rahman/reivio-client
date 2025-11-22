@@ -35,6 +35,8 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
+      "https://reivio.com",
+      "https://routeroof.com",
       "https://banglabnb.com",
       "http://localhost:8081", // Expo web
       "exp://192.168.0.112:8081", // optional: Expo Go app if needed
@@ -111,7 +113,7 @@ app.use("/api/promocode", require("./routes/promocode"));
 app.use("/api/config", require("./routes/config"));
 
 app.use((err, req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://banglabnb.com");
+  res.header("Access-Control-Allow-Origin", "https://routeroof.com");
   res.header("Access-Control-Allow-Credentials", "true");
   res.status(500).json({ message: "Internal Server Error" });
 });

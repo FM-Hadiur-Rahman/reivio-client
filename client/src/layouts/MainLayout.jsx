@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import logo from "../assets/reivio_logo.PNG";
+import logo from "../assets/reivio.PNG";
 import TrustBadge from "../components/TrustBadge";
 import TawkToWidget from "../components/TawkToWidget";
 
@@ -32,19 +32,18 @@ const MainLayout = () => {
         >
           <img
             src={logo}
-            alt="RouteRoof Logo"
+            alt="Reivio Logo"
             className={`object-contain transition-all duration-300 ${
               isScrolled ? "w-10 h-10" : "w-18 h-16"
             }`}
           />
-          {/* <span
+          <span
             className={`font-bold transition-all duration-300 ${
               isScrolled ? "text-base" : "text-xl"
             } hidden sm:inline-block`}
           >
-            <span className="text-green-600">Route</span>
-            <span className="text-red-600">Roof</span>
-          </span> */}
+            <span className="text-green-600">REIVIO</span>
+          </span>
         </Link>
         <Navbar />
       </header>

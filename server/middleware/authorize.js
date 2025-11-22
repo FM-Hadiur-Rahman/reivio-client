@@ -14,9 +14,6 @@ const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     const userRoles = req.user?.roles || [];
 
-    console.log("✅ Required roles:", allowedRoles);
-    console.log("🧑‍💻 Logged-in user roles:", userRoles);
-
     // Check if the user has at least one of the allowed roles
     const isAuthorized = allowedRoles.some((role) => userRoles.includes(role));
 

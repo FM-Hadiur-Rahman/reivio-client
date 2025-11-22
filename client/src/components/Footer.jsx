@@ -5,7 +5,7 @@ const Footer = () => {
   const { t, i18n } = useTranslation();
 
   return (
-    <footer className="bg-green-700 text-white pt-10 pb-6 px-4">
+    <footer className="bg-gray-800 text-white pt-10 pb-6 px-4">
       <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
         {/* Brand */}
         <div>
@@ -76,8 +76,8 @@ const Footer = () => {
           </div>
 
           <div className="flex gap-2 mt-4">
-            <img src="/reivio_icon.PNG" alt="Google Play" className="h-10" />
-            <img src="/reivio_icon.PNG" alt="App Store" className="h-10" />
+            <img src="/reivio.png" alt="Google Play" className="h-10" />
+            <img src="/reivio.png" alt="App Store" className="h-10" />
           </div>
         </div>
       </div>
