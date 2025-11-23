@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Outlet, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import logo from "../assets/reivio.PNG";
+import logo from "../assets/reivio.png";
 import TrustBadge from "../components/TrustBadge";
 import TawkToWidget from "../components/TawkToWidget";
 
