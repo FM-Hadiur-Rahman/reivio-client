@@ -1,4 +1,22 @@
 import { Link, useNavigate } from "react-router-dom";
+import {
+  Home,
+  BedDouble,
+  Car,
+  Crown,
+  Bike,
+  Globe2,
+  Bell,
+  UserPlus2,
+  UserRound,
+  User,
+  LayoutDashboard,
+  Heart,
+  Settings2,
+  LogOut as LogOutIcon,
+  X,
+} from "lucide-react";
+
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -143,64 +161,100 @@ const Navbar = () => {
       }`}
     >
       <div className="w-full max-w-screen-xl mx-auto px-4 flex justify-between items-center">
-        {/* Desktop Navigation */}
-        <nav className="hidden xl:flex items-center space-x-4 text-gray-700">
-          <Link to="/" className="hover:text-green-600">
-            🏠 Home
-          </Link>
-          <Link to="/listings" className="hover:text-green-600">
-            🏡 Explore Stays
-          </Link>
-          <Link to="/trips" className="hover:text-green-600">
-            🚗 Find a Ride
+        {/* Desktop Navigation – premium (right) */}
+        <nav className="hidden xl:flex items-center gap-3 text-sm font-medium text-slate-600">
+          {/* Main links */}
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-100 hover:text-teal-700 transition-all duration-200"
+          >
+            <Home className="w-4 h-4" />
+            <span>Home</span>
           </Link>
 
+          <Link
+            to="/listings"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-100 hover:text-teal-700 transition-all duration-200"
+          >
+            <BedDouble className="w-4 h-4" />
+            <span>Explore Stays</span>
+          </Link>
+
+          <Link
+            to="/trips"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-slate-100 hover:text-teal-700 transition-all duration-200"
+          >
+            <Car className="w-4 h-4" />
+            <span>Find a Ride</span>
+          </Link>
+
+          {/* Upsell links */}
           {!isLoggedIn || primaryRole !== "host" ? (
             <Link
               to="/register?primaryRole=host"
-              className="hover:text-green-600"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-teal-100 bg-teal-50/70 text-teal-700 hover:bg-teal-100 hover:border-teal-300 transition-all duration-200"
             >
-              🌟 Become a Host
-            </Link>
-          ) : null}
-          {!isLoggedIn || primaryRole !== "driver" ? (
-            <Link to="/register?role=driver" className="hover:text-green-600">
-              🛵 Become a Driver
+              <Crown className="w-4 h-4" />
+              <span>Become a Host</span>
             </Link>
           ) : null}
 
+          {!isLoggedIn || primaryRole !== "driver" ? (
+            <Link
+              to="/register?role=driver"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-100 bg-amber-50/70 text-amber-700 hover:bg-amber-100 hover:border-amber-300 transition-all duration-200"
+            >
+              <Bike className="w-4 h-4" />
+              <span>Become a Driver</span>
+            </Link>
+          ) : null}
+
+          {/* Language toggle */}
           <button
             onClick={toggleLanguage}
-            className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+            className="ml-1 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 text-xs text-slate-600 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 transition-all duration-200"
           >
-            🌐 {i18n.language === "en" ? "বাংলা" : "EN"}
+            <Globe2 className="w-4 h-4" />
+            {i18n.language === "en" ? "বাংলা" : "EN"}
           </button>
 
+          {/* Notifications */}
           {isLoggedIn && (
-            <Link to="/notifications" className="relative group">
-              <span className="text-xl">🔔</span>
+            <Link
+              to="/notifications"
+              className="relative ml-1 flex items-center justify-center h-9 w-9 rounded-full hover:bg-slate-100 transition-colors duration-200"
+            >
+              <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-2 bg-red-600 text-white text-xs font-semibold rounded-full px-1.5 py-0.5">
+                <span className="absolute -top-1 -right-0.5 bg-red-600 text-white text-[0.65rem] font-semibold rounded-full px-1.5 py-0.5 shadow-sm">
                   {unreadCount}
                 </span>
               )}
             </Link>
           )}
 
+          {/* Auth / profile */}
           {isLoggedIn ? (
-            <div className="relative" ref={menuRef}>
+            <div className="relative ml-2" ref={menuRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="hover:text-green-600 font-medium flex items-center space-x-2"
+                className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-full border border-slate-200 bg-white/70 hover:bg-teal-50 hover:border-teal-400 transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 <img
                   src={safeUser.avatar || "/default-avatar.png"}
                   alt="Profile"
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-teal-500/40"
                 />
-                <span>{safeUser.name}</span>
+                <div className="flex flex-col leading-tight">
+                  <span className="text-xs font-semibold text-slate-700">
+                    {safeUser.name}
+                  </span>
+                  <span className="text-[0.65rem] uppercase tracking-wide text-teal-600">
+                    {primaryRole}
+                  </span>
+                </div>
                 <svg
-                  className={`w-4 h-4 transition-transform ${
+                  className={`w-4 h-4 text-slate-500 transition-transform duration-200 ${
                     dropdownOpen ? "rotate-180" : ""
                   }`}
                   fill="none"
@@ -218,42 +272,53 @@ const Navbar = () => {
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 min-w-[13rem] bg-white border rounded shadow-lg z-50 animate-dropdown origin-top-right">
-                  <div className="px-4 py-2 text-sm font-semibold text-green-700">
-                    {primaryRole.toUpperCase()}
+                <div className="absolute right-0 mt-2 min-w-[15rem] bg-white border border-slate-200 rounded-2xl shadow-xl z-50 animate-dropdown origin-top-right overflow-hidden">
+                  {/* Header */}
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                    <p className="text-[0.7rem] font-semibold text-slate-500 uppercase">
+                      Current role
+                    </p>
+                    <p className="text-sm font-semibold text-teal-700">
+                      {primaryRole.toUpperCase()}
+                    </p>
                   </div>
 
                   {/* Add Role options */}
-                  {!hasRole("host") && (
-                    <button
-                      onClick={() => handleAddRole("host")}
-                      className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                    >
-                      🌟 {t("become_host")}
-                    </button>
-                  )}
-                  {!hasRole("driver") && (
-                    <button
-                      onClick={() => handleAddRole("driver")}
-                      className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                    >
-                      🛵 {t("become_driver")}
-                    </button>
-                  )}
-                  {!hasRole("user") && (
-                    <button
-                      onClick={() => handleAddRole("user")}
-                      className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                    >
-                      👤 {t("become_user")}
-                    </button>
-                  )}
+                  <div className="py-1">
+                    {!hasRole("host") && (
+                      <button
+                        onClick={() => handleAddRole("host")}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-teal-50"
+                      >
+                        <UserPlus2 className="w-4 h-4 text-teal-600" />
+                        <span>{t("become_host")}</span>
+                      </button>
+                    )}
+                    {!hasRole("driver") && (
+                      <button
+                        onClick={() => handleAddRole("driver")}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-teal-50"
+                      >
+                        <UserRound className="w-4 h-4 text-teal-600" />
+                        <span>{t("become_driver")}</span>
+                      </button>
+                    )}
+                    {!hasRole("user") && (
+                      <button
+                        onClick={() => handleAddRole("user")}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-teal-50"
+                      >
+                        <User className="w-4 h-4 text-teal-600" />
+                        <span>{t("become_user")}</span>
+                      </button>
+                    )}
+                  </div>
 
-                  {/* Switch Role */}
+                  {/* Switch role section */}
                   {roles.length > 1 && (
-                    <div className="px-4 py-2 text-sm text-gray-700">
-                      <div className="font-semibold text-gray-800">
-                        Switch Role:
+                    <div className="px-4 py-2 border-t border-slate-100 text-xs text-slate-600">
+                      <div className="font-semibold text-slate-700 mb-1">
+                        Switch role
                       </div>
                       {roles
                         .filter((r) => r !== primaryRole)
@@ -261,58 +326,73 @@ const Navbar = () => {
                           <button
                             key={role}
                             onClick={() => handleRoleSwitch(role)}
-                            className="block text-green-600 hover:underline mt-1"
+                            className="flex items-center gap-1 text-teal-600 hover:underline py-0.5"
                           >
-                            {role === "host" && "🌟 Host"}
-                            {role === "driver" && "🛵 Driver"}
-                            {role === "user" && "👤 User"}
+                            <UserRound className="w-3 h-3" />
+                            <span className="capitalize">{role}</span>
                           </button>
                         ))}
                     </div>
                   )}
 
-                  <Link
-                    to={getDashboardPath()}
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
-                  >
-                    🏠 {t("dashboard")}
-                  </Link>
-                  <Link
-                    to="/my-account"
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
-                  >
-                    👤 {t("my_account")}
-                  </Link>
-                  <Link
-                    to="/wishlist"
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
-                  >
-                    ❤️ {t("wishlist")}
-                  </Link>
-                  <Link
-                    to="/profile"
-                    className="block px-4 py-2 text-sm hover:bg-gray-100"
-                  >
-                    🙍 {t("edit_profile")}
-                  </Link>
+                  {/* Links */}
+                  <div className="py-1 text-sm">
+                    <Link
+                      to={getDashboardPath()}
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-slate-500" />
+                      <span>{t("dashboard")}</span>
+                    </Link>
+                    <Link
+                      to="/my-account"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50"
+                    >
+                      <User className="w-4 h-4 text-slate-500" />
+                      <span>{t("my_account")}</span>
+                    </Link>
+                    <Link
+                      to="/wishlist"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50"
+                    >
+                      <Heart className="w-4 h-4 text-rose-500" />
+                      <span>{t("wishlist")}</span>
+                    </Link>
+                    <Link
+                      to="/profile"
+                      className="flex items-center gap-2 px-4 py-2 hover:bg-slate-50"
+                    >
+                      <Settings2 className="w-4 h-4 text-slate-500" />
+                      <span>{t("edit_profile")}</span>
+                    </Link>
+                  </div>
+
+                  {/* Logout */}
                   <button
                     onClick={() => {
                       logout();
                       navigate("/login");
                     }}
-                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 border-t border-slate-100"
                   >
-                    {t("logout")}
+                    <LogOutIcon className="w-4 h-4" />
+                    <span>{t("logout")}</span>
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <>
-              <Link to="/login" className="hover:text-green-600">
+              <Link
+                to="/login"
+                className="px-3 py-1.5 rounded-full hover:text-teal-700 hover:bg-slate-100 transition-colors duration-200"
+              >
                 {t("login")}
               </Link>
-              <Link to="/register" className="hover:text-green-600">
+              <Link
+                to="/register"
+                className="px-3 py-1.5 rounded-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm hover:shadow-md transition-all duration-200"
+              >
                 {t("register")}
               </Link>
             </>
@@ -333,213 +413,272 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer – premium */}
       <div
         className={`fixed inset-0 z-40 xl:hidden transition-all duration-300 ease-in-out ${
           mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
       >
+        {/* Backdrop */}
         <div
-          className="absolute inset-0 bg-black bg-opacity-30"
+          className="absolute inset-0 bg-black/40"
           onClick={() => setMobileOpen(false)}
         />
+
+        {/* Panel */}
         <div
           ref={mobileMenuRef}
-          className={`absolute top-4 right-0 w-2/3 max-w-xs bg-white shadow-xl p-4 rounded-l-lg transform transition-transform duration-300 ease-in-out ${
-            mobileOpen
-              ? "translate-x-0 opacity-100"
-              : "translate-x-full opacity-0"
+          className={`absolute top-0 right-0 h-full w-[78%] max-w-xs bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 ease-in-out ${
+            mobileOpen ? "translate-x-0" : "translate-x-full"
           }`}
-          style={{
-            height: "fit-content",
-            maxHeight: "90vh",
-            overflowY: "auto",
-          }}
         >
-          <div className="space-y-3">
-            <Link
-              to="/"
-              onClick={() => setMobileOpen(false)}
-              className="block hover:text-green-600"
-            >
-              🏠 Home
-            </Link>
-            <Link
-              to="/listings"
-              onClick={() => setMobileOpen(false)}
-              className="block hover:text-green-600"
-            >
-              🏡 Explore Stays
-            </Link>
-            <Link
-              to="/trips"
-              onClick={() => setMobileOpen(false)}
-              className="block hover:text-green-600"
-            >
-              🚗 Find a Ride
-            </Link>
-
-            {!isLoggedIn || primaryRole !== "host" ? (
-              <Link
-                to="/register?primaryRole=host"
-                onClick={() => setMobileOpen(false)}
-                className="block hover:text-green-600"
-              >
-                🌟 Become a Host
-              </Link>
-            ) : null}
-            {!isLoggedIn || primaryRole !== "driver" ? (
-              <Link
-                to="/register?role=driver"
-                onClick={() => setMobileOpen(false)}
-                className="block hover:text-green-600"
-              >
-                🛵 Become a Driver
-              </Link>
-            ) : null}
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <img
+                src={safeUser.avatar || "/default-avatar.png"}
+                alt="Avatar"
+                className="w-8 h-8 rounded-full object-cover"
+              />
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-semibold text-slate-800">
+                  {isLoggedIn ? safeUser.name : "Welcome to Reivio"}
+                </span>
+                <span className="text-[0.7rem] text-teal-600 uppercase font-semibold">
+                  {isLoggedIn ? primaryRole : "Guest"}
+                </span>
+              </div>
+            </div>
 
             <button
-              onClick={() => {
-                toggleLanguage();
-                setMobileOpen(false);
-              }}
-              className="block text-left hover:text-green-600"
+              onClick={() => setMobileOpen(false)}
+              className="p-1 rounded-full hover:bg-slate-100 transition-colors"
             >
-              🌐 {i18n.language === "en" ? "বাংলা" : "EN"}
+              <X className="w-5 h-5 text-slate-500" />
             </button>
+          </div>
 
+          <div
+            className="flex flex-col gap-4 px-3 py-4 overflow-y-auto"
+            style={{ maxHeight: "100%" }}
+          >
+            {/* Navigation */}
+            <div>
+              <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                Navigation
+              </p>
+              <div className="space-y-1">
+                <Link
+                  to="/"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Home className="w-4 h-4 text-slate-500" />
+                  <span>Home</span>
+                </Link>
+                <Link
+                  to="/listings"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <BedDouble className="w-4 h-4 text-slate-500" />
+                  <span>Explore Stays</span>
+                </Link>
+                <Link
+                  to="/trips"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <Car className="w-4 h-4 text-slate-500" />
+                  <span>Find a Ride</span>
+                </Link>
+                {!isLoggedIn || primaryRole !== "host" ? (
+                  <Link
+                    to="/register?primaryRole=host"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-teal-700 bg-teal-50 hover:bg-teal-100"
+                  >
+                    <Crown className="w-4 h-4" />
+                    <span>{t("become_host")}</span>
+                  </Link>
+                ) : null}
+                {!isLoggedIn || primaryRole !== "driver" ? (
+                  <Link
+                    to="/register?role=driver"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-amber-700 bg-amber-50 hover:bg-amber-100"
+                  >
+                    <Bike className="w-4 h-4" />
+                    <span>{t("become_driver")}</span>
+                  </Link>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Language */}
+            <div>
+              <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                Language
+              </p>
+              <button
+                onClick={() => {
+                  toggleLanguage();
+                  setMobileOpen(false);
+                }}
+                className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+              >
+                <Globe2 className="w-4 h-4 text-slate-500" />
+                <span>{i18n.language === "en" ? "বাংলা" : "EN"}</span>
+              </button>
+            </div>
+
+            {/* Auth sections */}
             {!isLoggedIn ? (
-              <>
-                <Link
-                  to="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="block hover:text-green-600"
-                >
-                  {t("login")}
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={() => setMobileOpen(false)}
-                  className="block hover:text-green-600"
-                >
-                  {t("register")}
-                </Link>
-              </>
+              <div>
+                <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                  Account
+                </p>
+                <div className="space-y-1">
+                  <Link
+                    to="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <User className="w-4 h-4 text-slate-500" />
+                    <span>{t("login")}</span>
+                  </Link>
+                  <Link
+                    to="/register"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-white bg-teal-600 hover:bg-teal-700"
+                  >
+                    <UserPlus2 className="w-4 h-4" />
+                    <span>{t("register")}</span>
+                  </Link>
+                </div>
+              </div>
             ) : (
               <>
-                <hr className="my-2" />
-                <div className="flex items-center space-x-2 border-b pb-2 mb-2">
-                  <img
-                    src={safeUser.avatar || "/default-avatar.png"}
-                    alt="Avatar"
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-green-700">
-                      {safeUser.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {primaryRole.toUpperCase()}
-                    </p>
+                {/* Role management */}
+                <div>
+                  <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                    Roles
+                  </p>
+                  <div className="space-y-1">
+                    {!hasRole("host") && (
+                      <button
+                        onClick={() => handleAddRole("host")}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                      >
+                        <Crown className="w-4 h-4 text-teal-600" />
+                        <span>{t("become_host")}</span>
+                      </button>
+                    )}
+                    {!hasRole("driver") && (
+                      <button
+                        onClick={() => handleAddRole("driver")}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                      >
+                        <Bike className="w-4 h-4 text-teal-600" />
+                        <span>{t("become_driver")}</span>
+                      </button>
+                    )}
+                    {!hasRole("user") && (
+                      <button
+                        onClick={() => handleAddRole("user")}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                      >
+                        <User className="w-4 h-4 text-teal-600" />
+                        <span>{t("become_user")}</span>
+                      </button>
+                    )}
+
+                    {roles.length > 1 && (
+                      <div className="px-2 pt-1 text-[0.7rem] text-slate-500">
+                        <span className="font-semibold text-slate-600">
+                          Switch role:
+                        </span>
+                        {roles
+                          .filter((r) => r !== primaryRole)
+                          .map((role) => (
+                            <button
+                              key={role}
+                              onClick={() => handleRoleSwitch(role)}
+                              className="block text-teal-600 hover:underline text-xs mt-0.5"
+                            >
+                              {role}
+                            </button>
+                          ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {!hasRole("host") && (
-                  <button
-                    onClick={() => handleAddRole("host")}
-                    className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                  >
-                    🌟 {t("become_host")}
-                  </button>
-                )}
-                {!hasRole("driver") && (
-                  <button
-                    onClick={() => handleAddRole("driver")}
-                    className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                  >
-                    🛵 {t("become_driver")}
-                  </button>
-                )}
-                {!hasRole("user") && (
-                  <button
-                    onClick={() => handleAddRole("user")}
-                    className="block px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
-                  >
-                    👤 {t("become_user")}
-                  </button>
-                )}
-
-                {roles.length > 1 && (
-                  <div className="px-4 py-2 text-sm text-gray-700">
-                    <div className="font-semibold text-gray-800">
-                      Switch Role:
-                    </div>
-                    {roles
-                      .filter((r) => r !== primaryRole)
-                      .map((role) => (
-                        <button
-                          key={role}
-                          onClick={() => handleRoleSwitch(role)}
-                          className="block text-green-600 hover:underline mt-1"
-                        >
-                          {role === "host" && "🌟 Host"}
-                          {role === "driver" && "🛵 Driver"}
-                          {role === "user" && "👤 User"}
-                        </button>
-                      ))}
+                {/* Account links */}
+                <div>
+                  <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                    Account
+                  </p>
+                  <div className="space-y-1">
+                    <Link
+                      to={getDashboardPath()}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <LayoutDashboard className="w-4 h-4 text-slate-500" />
+                      <span>{t("dashboard")}</span>
+                    </Link>
+                    <Link
+                      to="/my-account"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <User className="w-4 h-4 text-slate-500" />
+                      <span>{t("my_account")}</span>
+                    </Link>
+                    <Link
+                      to="/notifications"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <Bell className="w-4 h-4 text-slate-500" />
+                      <span>{t("notifications")}</span>
+                      {unreadCount > 0 && (
+                        <span className="ml-auto text-[0.7rem] font-semibold text-red-600">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </Link>
+                    <Link
+                      to="/wishlist"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <Heart className="w-4 h-4 text-rose-500" />
+                      <span>{t("wishlist")}</span>
+                    </Link>
+                    <Link
+                      to="/profile"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <Settings2 className="w-4 h-4 text-slate-500" />
+                      <span>{t("edit_profile")}</span>
+                    </Link>
                   </div>
-                )}
+                </div>
 
-                <Link
-                  to={getDashboardPath()}
-                  onClick={() => setMobileOpen(false)}
-                  className="block hover:text-green-600"
-                >
-                  🏠 {t("dashboard")}
-                </Link>
-                <Link
-                  to="/my-account"
-                  onClick={() => setMobileOpen(false)}
-                  className="block hover:text-green-600"
-                >
-                  👤 {t("my_account")}
-                </Link>
-                <Link
-                  to="/notifications"
-                  onClick={() => setMobileOpen(false)}
-                  className="block hover:text-green-600"
-                >
-                  🔔 {t("notifications")}
-                  {unreadCount > 0 && (
-                    <span className="ml-2 text-xs text-red-600 font-semibold">
-                      ({unreadCount})
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  to="/wishlist"
-                  onClick={() => setMobileOpen(false)}
-                  className="block hover:text-green-600"
-                >
-                  ❤️ {t("wishlist")}
-                </Link>
-                <Link
-                  to="/profile"
-                  onClick={() => setMobileOpen(false)}
-                  className="block hover:text-green-600"
-                >
-                  🙍 {t("edit_profile")}
-                </Link>
-
+                {/* Logout */}
                 <button
                   onClick={() => {
                     logout();
                     setMobileOpen(false);
                     navigate("/login");
                   }}
-                  className="block text-left w-full text-red-600"
+                  className="mt-1 flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 text-left"
                 >
-                  {t("logout")}
+                  <LogOutIcon className="w-4 h-4" />
+                  <span>{t("logout")}</span>
                 </button>
               </>
             )}
