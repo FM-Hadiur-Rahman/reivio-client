@@ -27,24 +27,70 @@ const MainLayout = () => {
       >
         <Link
           to="/"
-          className="flex items-center space-x-2 transition-all duration-300"
+          className="group flex items-center gap-2 sm:gap-3 transition-all duration-300"
           title="Go to Home"
         >
-          <img
-            src={logo}
-            alt="Reivio Logo"
-            className={`object-contain transition-all duration-300 ${
-              isScrolled ? "w-10 h-10" : "w-18 h-16"
-            }`}
-          />
-          <span
-            className={`font-bold transition-all duration-300 ${
-              isScrolled ? "text-base" : "text-xl"
-            } hidden sm:inline-block`}
+          {/* Logo container (premium badge) */}
+          <div
+            className={`
+      flex items-center justify-center rounded-2xl
+      bg-gradient-to-br from-teal-400 via-teal-500 to-sky-700
+      shadow-sm shadow-teal-500/40 ring-1 ring-teal-300/40
+      transition-all duration-300
+      ${isScrolled ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12"}
+      group-hover:shadow-md group-hover:shadow-teal-500/60
+    `}
           >
-            <span className="text-green-600">REIVIO</span>
-          </span>
+            <img
+              src={logo}
+              alt="Reivio logo"
+              className="h-9 w-9 sm:h-9 sm:w-9 object-contain"
+            />
+          </div>
+
+          {/* Brand text */}
+          <div className="hidden sm:flex flex-col leading-tight">
+            {/* Brand name */}
+            {/* Brand name */}
+            <span
+              className={`
+    font-semibold tracking-[0.18em] uppercase
+    transition-all duration-300 
+    ${
+      isScrolled
+        ? "text-xs sm:text-sm text-teal-900"
+        : "text-sm sm:text-base text-teal-600"
+    }
+    group-hover:text-teal-500
+  `}
+            >
+              REIVIO
+            </span>
+
+            {/* Main tagline */}
+            <span
+              className={`
+    text-[0.7rem] sm:text-xs text-slate-500
+    transition-colors duration-300
+    md:inline-block hidden
+    group-hover:text-teal-600
+  `}
+            >
+              Your Home · Your Journey · One Platform
+            </span>
+
+            {/* Secondary line – only on large screens */}
+            <span
+              className="
+        text-[0.65rem] sm:text-xs text-teal-600
+        hidden lg:inline-block
+      "
+            >
+              Discover your next place
+            </span>
+          </div>
         </Link>
+
         <Navbar />
       </header>
 
