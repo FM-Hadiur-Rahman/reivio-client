@@ -60,20 +60,18 @@ const Home = () => {
     <>
       <HeroBanner />
 
-      <section className="overflow-hidden border-y border-green-200 bg-white">
+      <section className="overflow-hidden border-y border-emerald-200 bg-gradient-to-r from-emerald-50 via-slate-50 to-emerald-50">
         <div className="whitespace-nowrap py-3">
-          <div className="inline-block animate-marquee text-green-800 font-semibold text-lg tracking-wide px-6">
-            🌾 Stay Local, Feel Bangladesh. &nbsp;&nbsp;|&nbsp;&nbsp; 🏡 Not
-            Just a Stay. A Cultural Journey. &nbsp;&nbsp;|&nbsp;&nbsp; 🌿 From
-            Clay Houses to Bamboo Huts — RouteRoof Welcomes You.
-            &nbsp;&nbsp;|&nbsp;&nbsp; 💚 Live Rural. Travel Real. Stay with
-            RoutRoof. &nbsp;&nbsp;|&nbsp;&nbsp; 🌊 Explore Rivers & Villages.
-            &nbsp;&nbsp;|&nbsp;&nbsp; 🛖 Wooden Walls, Warm Smiles.
-            &nbsp;&nbsp;|&nbsp;&nbsp; ✨ Rediscover Hospitality — The
-            Bangladeshi Way. &nbsp;&nbsp;|&nbsp;&nbsp; 📍 Your Home in Every
-            Village. &nbsp;&nbsp;|&nbsp;&nbsp; 🎒 Unplug from Routine. Plug into
-            Bengal. &nbsp;&nbsp;|&nbsp;&nbsp; 🌟 RoutRoof – Not just a stay, a
-            story 🇧🇩
+          <div className="inline-flex items-center animate-marquee text-emerald-800 font-medium text-sm sm:text-base tracking-wide px-6 gap-10">
+            <span>Where serenity meets simplicity</span>
+            <span>Crafted stays inspired by Bangladeshi heritage</span>
+            <span>Nature-led living, thoughtfully curated</span>
+            <span>Retreat into clay walls and handcrafted spaces</span>
+            <span>Experience stillness in its purest form</span>
+            <span>Where every stay begins with warmth</span>
+            <span>Discover the art of slow travel</span>
+            <span>A journey shaped by culture, comfort, and calm</span>
+            <span>Welcome to a new chapter of hospitality</span>
           </div>
         </div>
       </section>

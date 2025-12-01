@@ -147,7 +147,7 @@ const HeroSection = () => {
       {/* Background image / gradient */}
       <div className="absolute inset-0">
         <img
-          src="/banner1.jpg" // TODO: replace with your best banner
+          src="/banner5.jpg" // TODO: replace with your best banner
           alt="Reivio hero"
           className="w-full h-full object-cover opacity-80"
         />
@@ -197,7 +197,7 @@ const HeroSection = () => {
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={() => navigate("/listings")}
-                className="inline-flex items-center gap-2 rounded-full bg-white text-slate-900 px-4 py-2 text-sm font-semibold shadow-sm hover:shadow-md hover:bg-slate-50 transition"
+                className="inline-flex items-center gap-2 rounded-full text-slate-900 px-4 py-2 text-sm font-semibold shadow-sm ring-1 ring-slate-600 hover:shadow-md hover:bg-slate-50 transition"
               >
                 🏡 {t("hero.find_stay")}
               </button>
