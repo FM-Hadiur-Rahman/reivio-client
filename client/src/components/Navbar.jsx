@@ -391,7 +391,7 @@ const Navbar = () => {
               </Link>
               <Link
                 to="/register"
-                className="px-3 py-1.5 rounded-full bg-teal-600 text-white hover:bg-teal-700 shadow-sm hover:shadow-md transition-all duration-200"
+                className="px-3 py-1.5 rounded-full bg-teal-600 hover:bg-teal-700 shadow-sm hover:shadow-md transition-all duration-200"
               >
                 {t("register")}
               </Link>

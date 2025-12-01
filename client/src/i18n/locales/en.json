@@ -51,9 +51,14 @@
   "role_tooltip.driver": "Switch to Driver",
   "role_tooltip.host": "Switch to Host",
   "role_tooltip.user": "Switch to Guest",
+
+  "loading": "Loading...",
+  "error_loading_dates": "Failed to load booked dates. Please try again.",
+
   "error": {
     "switch_role": "❌ Failed to switch role"
   },
+
   "booking": {
     "requested_change": "Date change requested",
     "change_accepted": "Your date change was accepted",
@@ -75,6 +80,14 @@
 
   "booking_form": {
     "price_per_night": "৳{{price}} / night",
+    "night_label": "/ night",
+    "mode_stay_hint": "Secure your stay first. Ride is optional.",
+    "mode_combined_hint": "Includes stay + ride at checkout.",
+    "badge_safe": "Safe & Verified",
+    "badge_secure": "Secure payment",
+    "choose_dates": "Choose your dates",
+    "tap_change": "Tap to change",
+
     "guests": "Guests",
     "max_guests_note": "Maximum {{max}} guest(s) allowed",
     "promo_code": "Promo Code",
@@ -86,6 +99,7 @@
     "selected": "selected",
     "unavailable": "unavailable",
     "guests_placeholder": "Enter number of guests",
+
     "summary": {
       "subtotal": "৳{{price}} × {{nights}} night(s)",
       "service_fee": "Service fee",
@@ -94,6 +108,7 @@
       "total": "Total",
       "combined_total": "Total (Stay + Ride)"
     },
+
     "ride_fare": "Ride Fare (1 seat)"
   },
 
@@ -117,7 +132,19 @@
     "select_division": "Select Division",
     "select_district": "Select District",
     "add_date": "Add Date",
-    "search_btn": "🔍 Search"
+    "search_btn": "🔍 Search",
+
+    "add_keyword": "Add keyword or area",
+    "filters": "Filters",
+    "tags": "Popular tags",
+    "sort_by": "Sort by",
+    "default_sort": "Recommended",
+    "price_low_high": "Price: Low to High",
+    "price_high_low": "Price: High to Low",
+    "rating": "Top Rated",
+    "popular": "Most Booked",
+    "use_location": "Use my location",
+    "use_my_location": "Use my current location"
   },
 
   "footer": {
@@ -137,6 +164,19 @@
     "language": "Language",
     "rights": "All rights reserved."
   },
+
+  "listing": {
+    "highlights": "What this place offers",
+    "features_title": "Stay highlights",
+    "no_features": "No additional details provided."
+  },
+
+  "listing_card": {
+    "premium_badge": "Premium Host",
+    "per_night_short": "night",
+    "view_photos": "View photos"
+  },
+
   "division": {
     "Barishal": "Barishal",
     "Chattogram": "Chattogram",
@@ -147,6 +187,7 @@
     "Rangpur": "Rangpur",
     "Sylhet": "Sylhet"
   },
+
   "district": {
     "Barguna": "Barguna",
     "Barishal": "Barishal",
