@@ -73,3 +73,59 @@
   color: #f97373; /* rose-400 tone */
   opacity: 1;
 }
+@keyframes fog-slow {
+  0% {
+    transform: translate3d(-10px, 0, 0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate3d(20px, 10px, 0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-10px, 0, 0);
+    opacity: 0.5;
+  }
+}
+
+@keyframes fog-medium {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate3d(-25px, 5px, 0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.3;
+  }
+}
+
+@keyframes fog-fast {
+  0% {
+    transform: translate3d(10px, 0, 0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translate3d(-30px, -10px, 0);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate3d(10px, 0, 0);
+    opacity: 0.4;
+  }
+}
+
+.animate-fog-slow {
+  animation: fog-slow 28s ease-in-out infinite;
+}
+
+.animate-fog-medium {
+  animation: fog-medium 22s ease-in-out infinite;
+}
+
+.animate-fog-fast {
+  animation: fog-fast 18s ease-in-out infinite;
+}
