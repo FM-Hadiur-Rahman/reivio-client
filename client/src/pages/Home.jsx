@@ -60,14 +60,6 @@ const Home = () => {
     <>
       <HeroBanner />
 
-      <section className="py-8 bg-gray-100">
-        <div className="w-full mx-auto px-0">
-          <div className="bg-white rounded-xl shadow-md p-6">
-            <SearchBar onSearch={handleSearch} />
-          </div>
-        </div>
-      </section>
-
       <section className="overflow-hidden border-y border-green-200 bg-white">
         <div className="whitespace-nowrap py-3">
           <div className="inline-block animate-marquee text-green-800 font-semibold text-lg tracking-wide px-6">
