@@ -11,6 +11,7 @@ const LoginForm = () => {
     email: "",
     password: "",
   });
+  0;
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
   const navigate = useNavigate();

@@ -124,7 +124,6 @@ function App() {
   if (maintenance && !isAdmin) return <MaintenancePage />;
   return (
     <Router>
-      <ToastContainer position="top-left" autoClose={3000} />
       <MaintenanceBanner />
       <Routes>
         {/* Main Layout Wrapper */}
@@ -517,6 +516,22 @@ function App() {
           <Route path="/refund-policy" element={<RefundPolicy />} />
         </Route>
       </Routes>
+      <ToastContainer
+        // keep this so it uses the center container
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        style={{
+          top: "50%", // middle vertically
+          left: "50%", // center horizontally
+          transform: "translate(-50%, -50%)",
+          zIndex: 9999,
+        }}
+      />
     </Router>
   );
 }

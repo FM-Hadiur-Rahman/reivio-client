@@ -129,3 +129,13 @@
 .animate-fog-fast {
   animation: fog-fast 18s ease-in-out infinite;
 }
+/* in your global css */
+/* Make sure toasts are above navbar / overlays */
+.Toastify__toast-container {
+  z-index: 9999;
+}
+
+/* Offset when using position="top-center" */
+.Toastify__toast-container--top-center {
+  top: 4.5rem; /* tweak this to match your navbar height */
+}

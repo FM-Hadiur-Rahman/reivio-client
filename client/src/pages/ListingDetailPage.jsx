@@ -7,6 +7,7 @@ import ReviewList from "../components/ReviewList";
 import RideResults from "../components/RideResults";
 import { formatBanglaNumber } from "../utils/formatBanglaNumber";
 import { useTranslation } from "react-i18next";
+import { CarFront, BedDouble } from "lucide-react";
 
 const ListingDetailPage = () => {
   const { id } = useParams();
@@ -229,12 +230,12 @@ const ListingDetailPage = () => {
                   transition-all duration-200
                   ${
                     bookingMode === "stay"
-                      ? "bg-emerald-600 text-white shadow-sm"
+                      ? "bg-emerald-600 text-purple-600 shadow-sm"
                       : "text-slate-600 hover:bg-white"
                   }
                 `}
               >
-                🛏️ <span>{t("stay_only")}</span>
+                <BedDouble className="h-4 w-4" /> <span>{t("stay_only")}</span>
               </button>
               <button
                 onClick={() => setBookingMode("combined")}
@@ -243,12 +244,14 @@ const ListingDetailPage = () => {
                   transition-all duration-200
                   ${
                     bookingMode === "combined"
-                      ? "bg-sky-600 text-white shadow-sm"
+                      ? "bg-sky-600 text-purple-600 shadow-sm"
                       : "text-slate-600 hover:bg-white"
                   }
                 `}
               >
-                🛏️+🚗 <span>{t("stay_and_ride")}</span>
+                <BedDouble className="h-4 w-4" />
+                <CarFront className="h-4 w-4" />
+                <span>{t("stay_and_ride")}</span>
               </button>
             </div>
           </div>

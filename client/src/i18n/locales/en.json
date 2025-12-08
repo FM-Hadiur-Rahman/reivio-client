@@ -99,6 +99,7 @@
     "selected": "selected",
     "unavailable": "unavailable",
     "guests_placeholder": "Enter number of guests",
+    "login_required": "Please log in to book a stay or ride.",
 
     "summary": {
       "subtotal": "৳{{price}} × {{nights}} night(s)",

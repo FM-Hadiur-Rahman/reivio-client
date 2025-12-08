@@ -101,7 +101,7 @@ const HeroSection = () => {
 
               <button
                 onClick={() => navigate("/register?primaryRole=host")}
-                className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-black transition"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-white transition"
               >
                 <Leaf className="h-4 w-4" />
                 {t("hero.become_host", "Become a Host")}
