@@ -1,6 +1,6 @@
 const cron = require("node-cron");
 const User = require("../models/User");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 const dayjs = require("dayjs");
 
 // Run daily at 9 AM

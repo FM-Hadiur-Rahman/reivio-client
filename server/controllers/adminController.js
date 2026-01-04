@@ -13,7 +13,7 @@ const GlobalConfig = require("../models/GlobalConfig");
 const Payout = require("../models/Payout");
 const DriverPayout = require("../models/DriverPayout");
 const Trip = require("../models/Trip");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 
 /* ===================== FLAGGED ===================== */
 exports.getFlaggedReviews = async (req, res) => {

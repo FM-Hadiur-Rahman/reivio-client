@@ -2,7 +2,7 @@ const User = require("../models/User");
 const Listing = require("../models/Listing");
 const Trip = require("../models/Trip");
 const Booking = require("../models/Booking");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 
 exports.createCombinedBooking = async (req, res) => {
   const { listingId, dateFrom, dateTo, guests, tripId, promoCode } = req.body;

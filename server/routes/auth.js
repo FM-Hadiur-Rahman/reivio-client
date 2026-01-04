@@ -18,6 +18,7 @@ const {
   getMe,
   myReferral,
   addRole,
+  becomeDriver,
 } = require("../controllers/authController");
 
 router.get("/me", protect, getMe);
@@ -45,6 +46,7 @@ router.post("/reset-password", resetPassword);
 
 router.patch("/switch-role", protect, switchRole);
 router.post("/add-role", protect, addRole);
+router.post("/become-driver", protect, becomeDriver);
 
 router.get("/verify-token", getUserIdFromToken);
 router.post("/resend-verification", resendVerificationEmail);

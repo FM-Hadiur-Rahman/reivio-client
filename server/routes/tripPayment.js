@@ -5,7 +5,7 @@ const protect = require("../middleware/protect");
 const TripReservation = require("../models/TripReservation");
 const Trip = require("../models/Trip");
 const qs = require("querystring");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 const generateTripInvoice = require("../utils/generateTripInvoice");
 const User = require("../models/User");
 

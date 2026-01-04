@@ -1,5 +1,5 @@
 // 📁 server/controllers/bookingController.js
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 const Booking = require("../models/Booking");
 const Listing = require("../models/Listing");
 const User = require("../models/User");

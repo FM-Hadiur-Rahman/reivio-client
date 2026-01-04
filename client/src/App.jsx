@@ -99,6 +99,7 @@ import RideResultsPage from "./pages/RideResultsPage";
 import AuthDebug from "./pages/AuthDebug";
 import PaymentDetailsForm from "./components/PaymentDetailsForm";
 import AdminPaymentAccounts from "./pages/AdminPaymentAccounts";
+import BecomeDriverPage from "./pages/BecomeDriverPage";
 
 function App() {
   const [maintenance, setMaintenance] = useState(false);
@@ -478,6 +479,15 @@ function App() {
             }
           />
           {/* Driver Protected Routes */}
+          <Route
+            path="/become-driver"
+            element={
+              <ProtectedRouteWrapper role="driver">
+                <BecomeDriverPage />
+              </ProtectedRouteWrapper>
+            }
+          />
+
           <Route
             path="/dashboard/driver"
             element={

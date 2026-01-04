@@ -2,7 +2,7 @@
 const Trip = require("../models/Trip");
 const cloudinary = require("../middleware/cloudinaryUpload");
 const User = require("../models/User");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 const geolib = require("geolib");
 const DriverPayout = require("../models/DriverPayout");
 // controllers/tripController.js
@@ -12,11 +12,9 @@ exports.createTrip = async (req, res) => {
 
     // 🔒 Restrict unverified drivers
     if (!user.kyc || user.kyc.status !== "approved") {
-      return res
-        .status(403)
-        .json({
-          message: "You must complete identity verification to offer a ride.",
-        });
+      return res.status(403).json({
+        message: "You must complete identity verification to offer a ride.",
+      });
     }
 
     const tripData = {

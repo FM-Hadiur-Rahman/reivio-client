@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 
 const Booking = require("../models/Booking");
 const User = require("../models/User");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 const generateToken = require("../utils/generateToken");
 const { cloudinary } = require("../config/cloudinary"); // adjust the path if needed
 
@@ -41,6 +41,8 @@ exports.getMe = async (req, res) => {
 };
 
 exports.registerStep1 = async (req, res) => {
+  let createdUserId = null;
+
   try {
     const {
       name,
@@ -56,33 +58,109 @@ exports.registerStep1 = async (req, res) => {
       referralCode,
       agreedToTerms,
     } = req.body;
+
     const { division, district } = location || {};
-    if (!name || !email || !password || !phone || !division || !district) {
-      return res.status(400).json({ message: "Missing required fields" });
+
+    // ✅ 1) Field validation (return ALL errors)
+    const errors = {};
+    if (!name) errors.name = "Name is required";
+    if (!email) errors.email = "Email is required";
+    if (!password) errors.password = "Password is required";
+    if (!phone) errors.phone = "Phone is required";
+    if (!division) errors.division = "Division is required";
+    if (!district) errors.district = "District is required";
+    if (!agreedToTerms) errors.agreedToTerms = "You must accept terms";
+
+    if (primaryRole === "driver") {
+      if (!drivingLicense)
+        errors.drivingLicense = "Driving license is required";
+      if (!vehicleType) errors.vehicleType = "Vehicle type is required";
+      if (!seatsOffered) errors.seatsOffered = "Seats offered is required";
     }
+
+    if (Object.keys(errors).length) {
+      return res
+        .status(400)
+        .json({ message: "Validation failed", fields: errors });
+    }
+
+    // ✅ 2) Normalize email
+    const normalizedEmail = String(email).trim().toLowerCase();
+
+    // ✅ 3) Check existing user
+    const existing = await User.findOne({ email: normalizedEmail });
+
+    // 3a) If verified user exists → block
+    if (existing && existing.isVerified) {
+      return res.status(400).json({
+        message: "Email already exists",
+        fields: { email: "This email is already registered" },
+      });
+    }
+
+    // 3b) If user exists but not verified → resend token + return OK (no new user)
+    if (existing && !existing.isVerified) {
+      const rawToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(rawToken)
+        .digest("hex");
+
+      existing.verificationToken = hashedToken;
+      existing.verificationTokenExpires = Date.now() + 60 * 60 * 1000; // 1 hour
+      await existing.save({ validateBeforeSave: false });
+
+      const verifyUrl = `${
+        process.env.CLIENT_URL
+      }/verify-email?token=${encodeURIComponent(rawToken)}`;
+
+      try {
+        await sendEmail({
+          to: normalizedEmail,
+          subject: "Verify your Reivio account",
+          html: `<h2>Hello ${existing.name},</h2>
+            <p>You already started signup but your email is not verified.</p>
+            <p>Please verify your email:</p>
+            <a href="${verifyUrl}">🌐 Verify via Web</a><br/>
+            <a href="reiviomobile://verify-email?token=${encodeURIComponent(
+              rawToken
+            )}">📱 Open in App</a>`,
+        });
+      } catch (e) {
+        // Don't block user if email fails — they can try resend again
+        console.error("❌ Resend verification email failed:", e.message);
+      }
+
+      return res.status(200).json({
+        message:
+          "You already signed up but not verified. We re-sent the verification email.",
+        userId: existing._id,
+        resent: true,
+      });
+    }
+
+    // ✅ 4) Referral code (optional; never blocks)
     let referredBy = null;
     if (referralCode) {
       const referrer = await User.findOne({
-        referralCode: referralCode.toUpperCase(),
-      });
-      if (referrer) referredBy = referralCode.toUpperCase();
+        referralCode: String(referralCode).toUpperCase(),
+      }).lean();
+
+      if (referrer) referredBy = String(referralCode).toUpperCase();
       else console.warn("⚠️ Invalid referral code");
     }
-    const existing = await User.findOne({ email });
-    if (existing) {
-      return res.status(400).json({ message: "Email already exists" });
-    }
 
+    // ✅ 5) Create verification token
     const rawToken = crypto.randomBytes(32).toString("hex");
     const hashedToken = crypto
       .createHash("sha256")
       .update(rawToken)
       .digest("hex");
 
-    // 👤 Create new user
+    // ✅ 6) Create user
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password,
       phone,
       primaryRole,
@@ -94,82 +172,124 @@ exports.registerStep1 = async (req, res) => {
       identityVerified: false,
       signupStep: 1,
       referredBy,
+      agreedToTerms: true,
       ...(primaryRole === "driver" && {
-        driver: {
-          drivingLicense,
-          vehicleType,
-          seatsOffered,
-        },
+        driver: { drivingLicense, vehicleType, seatsOffered },
       }),
-      agreedToTerms: req.body.agreedToTerms || false,
     });
 
-    const verifyUrl = `${process.env.CLIENT_URL}/verify-email?token=${rawToken}`;
+    createdUserId = user._id;
+
+    // ✅ 7) Send verification email (rollback if it fails)
+    const verifyUrl = `${
+      process.env.CLIENT_URL
+    }/verify-email?token=${encodeURIComponent(rawToken)}`;
 
     await sendEmail({
-      to: email,
-      subject: "Verify your BanglaBnB account",
+      to: normalizedEmail,
+      subject: "Verify your Reivio account",
       html: `<h2>Hi ${name},</h2>
-        <p>Thanks for signing up as a ${primaryRole}.</p>
         <p>Please verify your email:</p>
         <a href="${verifyUrl}">🌐 Verify via Web</a><br/>
-        <a href="banglabnbmobile://verify-email?token=${rawToken}">📱 Open in App</a>`,
+        <a href="reiviomobile://verify-email?token=${encodeURIComponent(
+          rawToken
+        )}">📱 Open in App</a>`,
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       message: "✅ Step 1 complete. Check your email to verify your account.",
       userId: user._id,
     });
   } catch (err) {
     console.error("❌ Error in registerStep1:", err);
-    res.status(500).json({ message: "Internal server error" });
+
+    // ✅ Rollback only if we actually created a new user
+    if (createdUserId) {
+      try {
+        await User.findByIdAndDelete(createdUserId);
+        console.warn(
+          "🧹 Rolled back user due to failed signup step1:",
+          createdUserId
+        );
+      } catch (rollbackErr) {
+        console.error("❌ Rollback failed:", rollbackErr.message);
+      }
+    }
+
+    return res
+      .status(500)
+      .json({ message: "Registration failed. Please try again." });
   }
 };
 
 exports.verifyIdentityHandler = async (req, res) => {
-  const { userId, livePhotoBase64 } = req.body;
-  const { idDocument, idBack, livePhoto, drivingLicense } = req.files || {};
+  try {
+    const { userId, livePhotoBase64 } = req.body;
+    const files = req.files || {};
 
-  if (!userId || !idDocument || !idBack) {
-    return res
-      .status(400)
-      .json({ message: "Missing required ID document, ID back, or user ID." });
-  }
+    const idDocument = files.idDocument?.[0];
+    const idBack = files.idBack?.[0];
+    const livePhoto = files.livePhoto?.[0]; // optional
+    const drivingLicense = files.drivingLicense?.[0]; // optional (driver)
 
-  const user = await User.findById(userId);
-  if (!user) return res.status(404).json({ message: "User not found" });
+    // ✅ Field-level validation
+    const errors = {};
+    if (!userId) errors.userId = "User ID is required";
+    if (!idDocument) errors.idDocument = "Front side of ID is required";
+    if (!idBack) errors.idBack = "Back side of ID is required";
 
-  // ✅ ID Front & Back via multer (already handled by Cloudinary)
-  user.idDocumentUrl = idDocument[0].path; // Front side
-  user.idBackUrl = idBack[0].path; // ✅ Back side (NEW)
-  // ✅ NEW: Driving license
-  if (drivingLicense && drivingLicense[0]) {
-    user.drivingLicenseUrl = drivingLicense[0].path;
-  }
-
-  // ✅ Live photo via file or base64
-  if (livePhoto && livePhoto[0]) {
-    user.livePhotoUrl = livePhoto[0].path;
-  } else if (livePhotoBase64) {
-    try {
-      const result = await cloudinary.uploader.upload(livePhotoBase64, {
-        folder: "banglabnb/verifications",
-        public_id: `livePhoto-${Date.now()}`,
-      });
-      user.livePhotoUrl = result.secure_url;
-    } catch (err) {
-      console.error("❌ Cloudinary base64 upload failed:", err.message);
-      return res.status(500).json({ message: "Failed to upload selfie image" });
+    if (Object.keys(errors).length) {
+      return res
+        .status(400)
+        .json({ message: "Validation failed", fields: errors });
     }
-  } else {
-    return res.status(400).json({ message: "Live photo is required" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // ✅ Save required docs (multer->cloudinary already uploaded)
+    user.idDocumentUrl = idDocument.path;
+    user.idBackUrl = idBack.path;
+
+    // ✅ Optional: driving license (for drivers)
+    if (drivingLicense?.path) {
+      user.drivingLicenseUrl = drivingLicense.path;
+    }
+
+    // ✅ Optional: live photo (file OR base64)
+    if (livePhoto?.path) {
+      user.livePhotoUrl = livePhoto.path;
+    } else if (livePhotoBase64) {
+      try {
+        const result = await cloudinary.uploader.upload(livePhotoBase64, {
+          folder: "reivio/verifications", // ✅ fixed folder
+          public_id: `livePhoto-${userId}-${Date.now()}`,
+        });
+        user.livePhotoUrl = result.secure_url;
+      } catch (err) {
+        console.error("❌ Cloudinary base64 upload failed:", err.message);
+        return res.status(500).json({ message: "Failed to upload live photo" });
+      }
+    }
+    // ✅ If neither provided, it's OK (because UI says Optional)
+
+    // ✅ Mark step + status
+    user.signupStep = 2;
+    user.identityVerified = false;
+
+    // (optional) if you have kyc
+    user.kyc = user.kyc || {};
+    user.kyc.status = "pending";
+
+    await user.save({ validateBeforeSave: false });
+
+    return res
+      .status(200)
+      .json({ message: "✅ Identity verification submitted" });
+  } catch (err) {
+    console.error("❌ verifyIdentityHandler error:", err);
+    return res.status(500).json({ message: "Failed to submit verification" });
   }
-
-  user.signupStep = 2;
-  user.identityVerified = false;
-
-  await user.save();
-  res.status(200).json({ message: "Identity verification submitted" });
 };
 
 // authController.js
@@ -381,25 +501,75 @@ exports.switchRole = async (req, res) => {
   const user = await User.findById(req.user.id);
 
   if (!user) return res.status(404).json({ message: "User not found" });
-
   if (!user.roles.includes(role)) {
     return res
       .status(403)
       .json({ message: "You don't have access to this role" });
   }
 
+  // ✅ Guard: if switching to driver, require profile
+  if (role === "driver") {
+    const d = user.driver || {};
+    const fields = {};
+    if (!d.drivingLicense) fields.drivingLicense = "Required";
+    if (!d.vehicleType) fields.vehicleType = "Required";
+    if (!d.seatsOffered) fields.seatsOffered = "Required";
+
+    if (Object.keys(fields).length) {
+      return res.status(400).json({
+        message: "Complete driver profile first",
+        fields,
+        code: "DRIVER_PROFILE_INCOMPLETE",
+      });
+    }
+  }
+
   user.primaryRole = role;
   await user.save({ validateBeforeSave: false });
 
-  res.json({
+  return res.json({
     message: "Role switched",
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    avatar: user.avatar,
     primaryRole: user.primaryRole,
     roles: user.roles,
-    kyc: user.kyc, // optional
+  });
+};
+
+exports.becomeDriver = async (req, res) => {
+  const { drivingLicense, vehicleType, seatsOffered } = req.body;
+  const user = await User.findById(req.user.id);
+
+  if (!user) return res.status(404).json({ message: "User not found" });
+
+  // ✅ Validate fields
+  const fields = {};
+  if (!drivingLicense) fields.drivingLicense = "Driving license is required";
+  if (!vehicleType) fields.vehicleType = "Vehicle type is required";
+  if (!seatsOffered) fields.seatsOffered = "Seats offered is required";
+
+  if (Object.keys(fields).length) {
+    return res.status(400).json({ message: "Validation failed", fields });
+  }
+
+  // ✅ Save driver info
+  user.driver = {
+    drivingLicense,
+    vehicleType,
+    seatsOffered: Number(seatsOffered),
+  };
+
+  // ✅ Add role if missing
+  if (!user.roles.includes("driver")) user.roles.push("driver");
+
+  // ✅ Switch primary role
+  user.primaryRole = "driver";
+
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json({
+    message: "✅ Driver profile saved. You are now a driver.",
+    primaryRole: user.primaryRole,
+    roles: user.roles,
+    driver: user.driver,
   });
 };
 

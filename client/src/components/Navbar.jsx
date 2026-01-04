@@ -66,13 +66,21 @@ const Navbar = () => {
 
   const handleAddRole = async (role) => {
     try {
+      // ✅ Special: becoming driver needs extra info
+      if (role === "driver") {
+        setDropdownOpen(false);
+        setMobileOpen(false);
+        navigate("/become-driver"); // new page
+        return;
+      }
+
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/auth/add-role`,
         { role },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const updatedUser = res.data;
-      updateUser(updatedUser);
+
+      updateUser(res.data);
       toast.success(`✅ ${t("added_new_role")} ➡ ${role.toUpperCase()}`);
       navigate(getDashboardPath(role));
       setDropdownOpen(false);
@@ -91,16 +99,27 @@ const Navbar = () => {
         { role },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      const updatedUser = res.data;
-      updateUser(updatedUser);
+
+      updateUser(res.data);
       toast.success(
-        `✅ ${t("switch_role")} ➡ ${updatedUser.primaryRole.toUpperCase()}`
+        `✅ ${t("switch_role")} ➡ ${res.data.primaryRole.toUpperCase()}`
       );
-      navigate(getDashboardPath(updatedUser.primaryRole));
+      navigate(getDashboardPath(res.data.primaryRole));
       setDropdownOpen(false);
       setMobileOpen(false);
-    } catch {
-      toast.error(t("error.switch_role"));
+    } catch (err) {
+      const data = err.response?.data;
+
+      // ✅ If user tries switching to driver but missing driver info → go setup
+      if (data?.code === "DRIVER_PROFILE_INCOMPLETE") {
+        toast.info("Complete driver profile first");
+        setDropdownOpen(false);
+        setMobileOpen(false);
+        navigate("/become-driver");
+        return;
+      }
+
+      toast.error(data?.message || t("error.switch_role"));
     }
   };
 

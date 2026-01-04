@@ -4,7 +4,7 @@ dotenv.config(); // Load .env variables
 
 const connectDB = require("../config/db"); // uses DATABASE and DATABASE_PASSWORD
 const Booking = require("../models/Booking");
-const sendEmail = require("../utils/sendEmail");
+const sendEmail = require("../utils/email/sendEmail");
 const User = require("../models/User");
 
 const expireOldBookings = async () => {
