@@ -182,127 +182,280 @@ const ListingDetailPage = () => {
         </section>
 
         {/* TITLE / META / PRICE */}
-        <section className="space-y-3">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-2xl md:text-3xl font-semibold text-slate-900">
+        <section className="space-y-5">
+          {/* Title + location meta */}
+          <div className="space-y-2">
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-slate-900">
               {listing.title}
             </h1>
 
             <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-slate-600">
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1">
-                📍
-                <span>
+              {/* Main location pill */}
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200 shadow-sm">
+                <span className="text-[13px]">📍</span>
+                <span className="font-medium text-slate-800">
                   {t(`district.${listing.district}`)},{" "}
                   {t(`division.${listing.division}`)}
                 </span>
               </span>
+
+              {/* Address pill */}
               {listing.location?.address && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1">
-                  🏠 <span>{listing.location.address}</span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 ring-1 ring-slate-200 shadow-sm">
+                  <span className="text-[13px]">🏠</span>
+                  <span className="truncate max-w-[320px] text-slate-700">
+                    {listing.location.address}
+                  </span>
+                </span>
+              )}
+
+              {/* Optional: type / highlight */}
+              {listing.type && (
+                <span className="inline-flex items-center rounded-full bg-slate-900 px-3 py-1.5 text-white text-xs font-semibold">
+                  {listing.type}
                 </span>
               )}
             </div>
           </div>
 
-          <div className="flex flex-wrap items-baseline justify-between gap-3 pt-2">
-            <div className="flex flex-col">
-              <span className="text-xl md:text-2xl font-semibold text-slate-900">
-                {t("price_per_night", {
-                  price: priceDisplay,
-                })}
-              </span>
-              <span className="text-xs text-slate-500">
-                {t("guests_supported", { count: guestDisplay })}
+          {/* Price + segmented control */}
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 pt-1">
+            {/* Price block */}
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col">
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl md:text-3xl font-semibold text-slate-900">
+                    {priceDisplay}
+                  </span>
+                  <span className="text-sm text-slate-500">
+                    {t("per_night", "/night")}
+                  </span>
+                </div>
+
+                <span className="text-xs text-slate-500 mt-1">
+                  {t("guests_supported", { count: guestDisplay })}
+                </span>
+              </div>
+
+              {/* Optional: little “tax note” */}
+              <span className="hidden md:inline-flex items-center rounded-full bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-600 ring-1 ring-slate-200">
+                {t("transparent_pricing", "Transparent pricing")}
               </span>
             </div>
 
-            {/* Stay / Stay+Ride toggle */}
+            {/* Premium segmented control */}
             <div
               className="
-                inline-flex items-center rounded-full bg-slate-100
-                ring-1 ring-slate-200 p-1 text-xs md:text-sm
-              "
+        relative inline-flex items-center rounded-full bg-white
+        ring-1 ring-slate-200 shadow-sm p-1
+      "
             >
+              {/* Sliding background */}
+              <div
+                className={`
+          absolute top-1 bottom-1 left-1 w-[calc(50%-4px)]
+          rounded-full bg-slate-900 transition-transform duration-300 ease-out
+          ${bookingMode === "combined" ? "translate-x-full" : "translate-x-0"}
+        `}
+              />
+
               <button
+                type="button"
                 onClick={() => setBookingMode("stay")}
                 className={`
-                  flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                  transition-all duration-200
-                  ${
-                    bookingMode === "stay"
-                      ? "bg-emerald-600 text-purple-600 shadow-sm"
-                      : "text-slate-600 hover:bg-white"
-                  }
-                `}
+          relative z-10 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors
+          ${
+            bookingMode === "stay"
+              ? "text-white"
+              : "text-slate-700 hover:text-slate-900"
+          }
+        `}
               >
-                <BedDouble className="h-4 w-4" /> <span>{t("stay_only")}</span>
+                <BedDouble
+                  className={`h-4 w-4 ${
+                    bookingMode === "stay" ? "text-white" : "text-slate-500"
+                  }`}
+                />
+                <span>{t("stay_only")}</span>
               </button>
+
               <button
+                type="button"
                 onClick={() => setBookingMode("combined")}
                 className={`
-                  flex items-center gap-1.5 px-3 py-1.5 rounded-full
-                  transition-all duration-200
-                  ${
-                    bookingMode === "combined"
-                      ? "bg-sky-600 text-purple-600 shadow-sm"
-                      : "text-slate-600 hover:bg-white"
-                  }
-                `}
+          relative z-10 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors
+          ${
+            bookingMode === "combined"
+              ? "text-white"
+              : "text-slate-700 hover:text-slate-900"
+          }
+        `}
               >
-                <BedDouble className="h-4 w-4" />
-                <CarFront className="h-4 w-4" />
+                <div className="flex items-center -space-x-1">
+                  <BedDouble
+                    className={`h-4 w-4 ${
+                      bookingMode === "combined"
+                        ? "text-white"
+                        : "text-slate-500"
+                    }`}
+                  />
+                  <CarFront
+                    className={`h-4 w-4 ${
+                      bookingMode === "combined"
+                        ? "text-white"
+                        : "text-slate-500"
+                    }`}
+                  />
+                </div>
                 <span>{t("stay_and_ride")}</span>
               </button>
             </div>
           </div>
+
+          {/* Optional: premium “value line” under toggle */}
+          {bookingMode === "combined" && (
+            <div className="rounded-2xl bg-slate-50 ring-1 ring-slate-200 px-4 py-3 text-sm text-slate-700">
+              <span className="font-semibold text-slate-900">Stay + Ride</span>{" "}
+              {t(
+                "combo_hint",
+                "lets you reserve a trip that matches your stay route."
+              )}
+            </div>
+          )}
         </section>
 
-        {/* DESCRIPTION */}
-        <div className="rounded-2xl bg-gradient-to-br from-slate-50 to-white border border-slate-200/70 p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">📖</span>
-            <h2 className="text-xl md:text-2xl font-semibold text-slate-900">
-              {t("description")}
-            </h2>
+        {/* DESCRIPTION + FEATURES (Premium) */}
+        <div className="rounded-3xl bg-white ring-1 ring-slate-200 shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                <span className="text-lg">📖</span>
+              </div>
+              <div className="leading-tight">
+                <h2 className="text-lg md:text-xl font-semibold text-slate-900">
+                  {t("description")}
+                </h2>
+                <p className="text-xs md:text-sm text-slate-500">
+                  {t("about_this_place", "About this place")}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <p className="text-slate-700 text-[15px] leading-relaxed mb-4">
-            {listing.description}
-          </p>
+          {/* Body */}
+          <div className="px-6 py-5">
+            <p className="text-slate-700 text-[15px] leading-relaxed whitespace-pre-line">
+              {listing.description}
+            </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            {features.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all"
-              >
-                <span className="text-lg">{item.icon}</span>
-                <p className="text-slate-700 text-sm">{item.text}</p>
+            {/* Features */}
+            {features?.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {t("what_you_get", "What you’ll get")}
+                  </p>
+                  <span className="text-xs text-slate-500">
+                    {features.length} {t("features", "features")}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {features.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="
+                group flex items-center gap-3 rounded-2xl bg-slate-50
+                ring-1 ring-slate-200 px-4 py-3
+                hover:bg-white hover:shadow-sm transition-all
+              "
+                    >
+                      <div
+                        className="
+                  h-10 w-10 rounded-2xl bg-white
+                  ring-1 ring-slate-200 flex items-center justify-center
+                  group-hover:ring-slate-300 transition
+                "
+                      >
+                        <span className="text-lg">{item.icon}</span>
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-slate-800 text-sm font-semibold truncate">
+                          {item.text}
+                        </p>
+                        <p className="text-xs text-slate-500 truncate">
+                          {t("included", "Included")}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* HOUSE RULES */}
-        <div className="rounded-2xl bg-white border border-slate-200 p-6 shadow-sm mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">📜</span>
-            <h2 className="text-xl md:text-2xl font-semibold text-slate-900">
-              {t("house_rules")}
-            </h2>
+        {/* HOUSE RULES (Premium) */}
+        <div className="mt-6 rounded-3xl bg-white ring-1 ring-slate-200 shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
+                <span className="text-lg">📜</span>
+              </div>
+              <div className="leading-tight">
+                <h2 className="text-lg md:text-xl font-semibold text-slate-900">
+                  {t("house_rules")}
+                </h2>
+                <p className="text-xs md:text-sm text-slate-500">
+                  {t(
+                    "rules_hint",
+                    "Please follow these rules to keep everyone comfortable."
+                  )}
+                </p>
+              </div>
+            </div>
           </div>
 
-          <ul className="space-y-3 text-slate-700 text-[15px] leading-relaxed mt-2">
-            {houseRulesList.map((rule, idx) => (
-              <li
-                key={idx}
-                className="flex items-start gap-2 p-2 rounded-md hover:bg-slate-50 transition"
-              >
-                <span className="text-slate-400 text-lg">•</span>
-                <span>{rule}</span>
-              </li>
-            ))}
-          </ul>
+          {/* Body */}
+          <div className="px-6 py-5">
+            <ul className="space-y-2">
+              {houseRulesList.map((rule, idx) => (
+                <li
+                  key={idx}
+                  className="
+            flex items-start gap-3 rounded-2xl px-4 py-3
+            bg-slate-50 ring-1 ring-slate-200
+            hover:bg-white hover:shadow-sm transition-all
+          "
+                >
+                  <span
+                    className="
+              mt-0.5 inline-flex h-6 w-6 items-center justify-center
+              rounded-full bg-white ring-1 ring-slate-200 text-slate-700
+              text-xs font-bold
+            "
+                  >
+                    ✓
+                  </span>
+                  <p className="text-slate-700 text-[15px] leading-relaxed">
+                    {rule}
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            {/* Optional footer note */}
+            <div className="mt-5 rounded-2xl bg-slate-900 text-white px-4 py-3 text-sm">
+              <span className="font-semibold">{t("tip", "Tip")}:</span>{" "}
+              {t(
+                "rules_tip",
+                "Ask the host if you’re unsure about any rule before booking."
+              )}
+            </div>
+          </div>
         </div>
 
         {/* REVIEWS */}

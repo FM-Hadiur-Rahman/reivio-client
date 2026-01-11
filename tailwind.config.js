@@ -1,7 +1,12 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
-  safelist: ["bg-[#f43f5e]", "bg-[#9333ea]", "hamburger"],
+  safelist: [
+    {
+      pattern:
+        /(bg|text|border|ring|from|to|via)-(brand|brandAlt)-(50|100|200|300|400|500|600|700|800|900)/,
+    },
+  ],
   darkMode: "class",
   theme: {
     extend: {

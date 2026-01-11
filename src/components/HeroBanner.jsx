@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import SearchBar from "./SearchBar";
 import logo from "/reivio.png";
+import HeroBannerCarousel from "./HeroBannerCarousel";
 
 import {
   Home,
@@ -85,7 +86,7 @@ const HeroSection = () => {
             <div className="mt-6 flex flex-wrap gap-3">
               <button
                 onClick={() => navigate("/listings")}
-                className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-md hover:bg-emerald-600 transition"
+                className="inline-flex items-center gap-2 rounded-full bg-teal-400 px-5 py-2.5 text-sm font-semibold text-slate-800 shadow-md hover:bg-teal-500 transition"
               >
                 <Home className="h-4 w-4" />
                 {t("hero.find_stay", "Find Stay")}
@@ -93,7 +94,7 @@ const HeroSection = () => {
 
               <button
                 onClick={() => navigate("/trips")}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 transition"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-teal-400 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-teal-500 transition"
               >
                 <CarFront className="h-4 w-4" />
                 {t("hero.find_ride", "Find Ride")}
@@ -101,7 +102,7 @@ const HeroSection = () => {
 
               <button
                 onClick={() => navigate("/register?primaryRole=host")}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-slate-900 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-white transition"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-teal-400 px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-teal-500 transition"
               >
                 <Leaf className="h-4 w-4" />
                 {t("hero.become_host", "Become a Host")}
@@ -125,47 +126,9 @@ const HeroSection = () => {
             </div>
           </div>
 
-          {/* RIGHT: image card */}
+          {/* RIGHT: image card (carousel from backend) */}
           <div className="w-full lg:w-1/2">
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="relative rounded-3xl overflow-hidden bg-slate-900/5 border border-slate-200 shadow-xl"
-            >
-              <div className="h-64 sm:h-72 lg:h-80">
-                <img
-                  src="/banner7.jpg"
-                  alt="Countryside stays in Bangladesh"
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/20 to-transparent" />
-              </div>
-
-              {/* label */}
-              <div className="absolute left-4 top-4 rounded-full bg-white/80 px-3 py-1 text-[0.7rem] uppercase tracking-[0.18em] text-slate-700 border border-slate-200">
-                Popular this week
-              </div>
-
-              {/* stats overlay */}
-              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                <p className="text-xs sm:text-sm text-slate-50 mb-3">
-                  Clay houses in Bogura · River-view cottages · Bamboo huts in
-                  Sundarbans · Hill stays in Bandarban.
-                </p>
-
-                <div className="flex gap-3">
-                  <div className="flex-1 rounded-2xl bg-black/55 px-4 py-3 text-xs border border-white/15">
-                    <p className="text-slate-200">Hosts onboarded</p>
-                    <p className="text-lg font-semibold text-white">120+</p>
-                  </div>
-                  <div className="flex-1 rounded-2xl bg-black/55 px-4 py-3 text-xs border border-white/15">
-                    <p className="text-slate-200">Districts covered</p>
-                    <p className="text-lg font-semibold text-white">40+</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+            <HeroBannerCarousel />
           </div>
         </div>
 

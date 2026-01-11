@@ -403,7 +403,7 @@ const BookingForm = ({
             <button
               type="button"
               onClick={handleApplyPromo}
-              className="rounded-xl bg-slate-900 text-teal-800 px-3 py-2 text-sm font-semibold shadow-sm hover:bg-slate-800 transition-colors"
+              className="rounded-xl bg-teal-400 text-white px-3 py-2 text-sm font-semibold shadow-sm hover:bg-slate-800 transition-colors"
             >
               {t("booking_form.apply")}
             </button>
@@ -464,8 +464,8 @@ const BookingForm = ({
             <button
               type="submit"
               className="
-            w-full rounded-2xl bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500
-            text-teal-500 py-2.5 text-sm font-semibold shadow-lg
+            w-full rounded-2xl bg-gradient-to-r from-teal-500 via-[#ff6f61] to-teal-400
+            text-white py-2.5 text-sm font-semibold shadow-lg
             hover:brightness-105 active:scale-[0.99] transition-all
           "
             >

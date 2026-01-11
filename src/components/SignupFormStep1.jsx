@@ -331,7 +331,7 @@ const SignupFormStep1 = () => {
 
         <button
           type="submit"
-          className="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded"
+          className="w-full bg-teal-400 hover:bg-teal-500 text-white py-2 rounded"
           disabled={isLoading}
         >
           {isLoading ? <span className="animate-spin">🔄</span> : "Sign Up"}

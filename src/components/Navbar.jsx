@@ -16,6 +16,7 @@ import {
   LogOut as LogOutIcon,
   X,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
@@ -63,6 +64,16 @@ const Navbar = () => {
       i18n.changeLanguage(savedLang);
     }
   }, [i18n]);
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
 
   const handleAddRole = async (role) => {
     try {
@@ -422,288 +433,319 @@ const Navbar = () => {
         <div className="xl:hidden">
           <button
             ref={hamburgerRef}
-            className="hamburger w-8 h-8 flex flex-col justify-center items-center space-y-1"
+            className="hamburger w-8 h-8 flex flex-col justify-center items-center gap-1.5 rounded-md hover:bg-slate-100"
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            <span className="w-6 h-0.5 bg-gray-700" />
-            <span className="w-6 h-0.5 bg-gray-700" />
-            <span className="w-6 h-0.5 bg-gray-700" />
+            <span className="w-6 h-0.5 bg-gray-700 rounded" />
+            <span className="w-6 h-0.5 bg-gray-700 rounded" />
+            <span className="w-6 h-0.5 bg-gray-700 rounded" />
           </button>
         </div>
       </div>
 
       {/* Mobile Drawer – premium */}
-      <div
-        className={`fixed inset-0 z-40 xl:hidden transition-all duration-300 ease-in-out ${
-          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-      >
-        {/* Backdrop */}
+      {/* Mobile Drawer – premium (Portal) */}
+      {createPortal(
         <div
-          className="absolute inset-0 bg-black/40"
-          onClick={() => setMobileOpen(false)}
-        />
-
-        {/* Panel */}
-        <div
-          ref={mobileMenuRef}
-          className={`absolute top-0 right-0 h-full w-[78%] max-w-xs bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 ease-in-out ${
-            mobileOpen ? "translate-x-0" : "translate-x-full"
+          className={`fixed inset-0 z-[9999] xl:hidden transition-opacity duration-300 ${
+            mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <img
-                src={safeUser.avatar || "/default-avatar.png"}
-                alt="Avatar"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-              <div className="flex flex-col leading-tight">
-                <span className="text-sm font-semibold text-slate-800">
-                  {isLoggedIn ? safeUser.name : "Welcome to Reivio"}
-                </span>
-                <span className="text-[0.7rem] text-teal-600 uppercase font-semibold">
-                  {isLoggedIn ? primaryRole : "Guest"}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setMobileOpen(false)}
-              className="p-1 rounded-full hover:bg-slate-100 transition-colors"
-            >
-              <X className="w-5 h-5 text-slate-500" />
-            </button>
-          </div>
-
+          {/* Backdrop */}
           <div
-            className="flex flex-col gap-4 px-3 py-4 overflow-y-auto"
-            style={{ maxHeight: "100%" }}
-          >
-            {/* Navigation */}
-            <div>
-              <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
-                Navigation
-              </p>
-              <div className="space-y-1">
-                <Link
-                  to="/"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Home className="w-4 h-4 text-slate-500" />
-                  <span>Home</span>
-                </Link>
-                <Link
-                  to="/listings"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <BedDouble className="w-4 h-4 text-slate-500" />
-                  <span>Explore Stays</span>
-                </Link>
-                <Link
-                  to="/trips"
-                  onClick={() => setMobileOpen(false)}
-                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <Car className="w-4 h-4 text-slate-500" />
-                  <span>Find a Ride</span>
-                </Link>
-                {!isLoggedIn || primaryRole !== "host" ? (
-                  <Link
-                    to="/register?primaryRole=host"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-teal-700 bg-teal-50 hover:bg-teal-100"
-                  >
-                    <Crown className="w-4 h-4" />
-                    <span>{t("become_host")}</span>
-                  </Link>
-                ) : null}
-                {!isLoggedIn || primaryRole !== "driver" ? (
-                  <Link
-                    to="/register?role=driver"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-amber-700 bg-amber-50 hover:bg-amber-100"
-                  >
-                    <Bike className="w-4 h-4" />
-                    <span>{t("become_driver")}</span>
-                  </Link>
-                ) : null}
-              </div>
-            </div>
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setMobileOpen(false)}
+          />
 
-            {/* Language */}
-            <div>
-              <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
-                Language
-              </p>
+          {/* Panel */}
+          <div
+            ref={mobileMenuRef}
+            className={`absolute top-0 right-0 h-full w-[78%] max-w-xs bg-white border-l border-slate-200 shadow-2xl transform transition-transform duration-300 ease-in-out ${
+              mobileOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <img
+                  src={safeUser.avatar || "/default-avatar.png"}
+                  alt="Avatar"
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+                <div className="flex flex-col leading-tight">
+                  <span className="text-sm font-semibold text-slate-800">
+                    {isLoggedIn ? safeUser.name : "Welcome to Reivio"}
+                  </span>
+                  <span className="text-[0.7rem] text-teal-600 uppercase font-semibold">
+                    {isLoggedIn ? primaryRole : "Guest"}
+                  </span>
+                </div>
+              </div>
+
               <button
-                onClick={() => {
-                  toggleLanguage();
-                  setMobileOpen(false);
-                }}
-                className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                onClick={() => setMobileOpen(false)}
+                className="p-1 rounded-full hover:bg-slate-100 transition-colors"
+                aria-label="Close menu"
               >
-                <Globe2 className="w-4 h-4 text-slate-500" />
-                <span>{i18n.language === "en" ? "বাংলা" : "EN"}</span>
+                <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
 
-            {/* Auth sections */}
-            {!isLoggedIn ? (
+            {/* Scrollable content */}
+            <div className="flex flex-col gap-4 px-3 py-4 overflow-y-auto h-[calc(100vh-60px)]">
+              {/* Navigation */}
               <div>
                 <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
-                  Account
+                  Navigation
                 </p>
+
                 <div className="space-y-1">
                   <Link
-                    to="/login"
+                    to="/"
                     onClick={() => setMobileOpen(false)}
                     className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
                   >
-                    <User className="w-4 h-4 text-slate-500" />
-                    <span>{t("login")}</span>
+                    <Home className="w-4 h-4 text-slate-500" />
+                    <span>Home</span>
                   </Link>
+
                   <Link
-                    to="/register"
+                    to="/listings"
                     onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-white bg-teal-600 hover:bg-teal-700"
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
                   >
-                    <UserPlus2 className="w-4 h-4" />
-                    <span>{t("register")}</span>
+                    <BedDouble className="w-4 h-4 text-slate-500" />
+                    <span>Explore Stays</span>
                   </Link>
+
+                  <Link
+                    to="/trips"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <Car className="w-4 h-4 text-slate-500" />
+                    <span>Find a Ride</span>
+                  </Link>
+
+                  {!isLoggedIn || primaryRole !== "host" ? (
+                    <Link
+                      to="/register?primaryRole=host"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-teal-700 bg-teal-50 hover:bg-teal-100"
+                    >
+                      <Crown className="w-4 h-4" />
+                      <span>{t("become_host")}</span>
+                    </Link>
+                  ) : null}
+
+                  {!isLoggedIn || primaryRole !== "driver" ? (
+                    <Link
+                      to="/register?role=driver"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-amber-700 bg-amber-50 hover:bg-amber-100"
+                    >
+                      <Bike className="w-4 h-4" />
+                      <span>{t("become_driver")}</span>
+                    </Link>
+                  ) : null}
                 </div>
               </div>
-            ) : (
-              <>
-                {/* Role management */}
-                <div>
-                  <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
-                    Roles
-                  </p>
-                  <div className="space-y-1">
-                    {!hasRole("host") && (
-                      <button
-                        onClick={() => handleAddRole("host")}
-                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
-                      >
-                        <Crown className="w-4 h-4 text-teal-600" />
-                        <span>{t("become_host")}</span>
-                      </button>
-                    )}
-                    {!hasRole("driver") && (
-                      <button
-                        onClick={() => handleAddRole("driver")}
-                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
-                      >
-                        <Bike className="w-4 h-4 text-teal-600" />
-                        <span>{t("become_driver")}</span>
-                      </button>
-                    )}
-                    {!hasRole("user") && (
-                      <button
-                        onClick={() => handleAddRole("user")}
-                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
-                      >
-                        <User className="w-4 h-4 text-teal-600" />
-                        <span>{t("become_user")}</span>
-                      </button>
-                    )}
 
-                    {roles.length > 1 && (
-                      <div className="px-2 pt-1 text-[0.7rem] text-slate-500">
-                        <span className="font-semibold text-slate-600">
-                          Switch role:
-                        </span>
-                        {roles
-                          .filter((r) => r !== primaryRole)
-                          .map((role) => (
-                            <button
-                              key={role}
-                              onClick={() => handleRoleSwitch(role)}
-                              className="block text-teal-600 hover:underline text-xs mt-0.5"
-                            >
-                              {role}
-                            </button>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+              {/* Language */}
+              <div>
+                <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                  Language
+                </p>
 
-                {/* Account links */}
+                <button
+                  onClick={() => {
+                    toggleLanguage();
+                    setMobileOpen(false);
+                  }}
+                  className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                >
+                  <Globe2 className="w-4 h-4 text-slate-500" />
+                  <span>{i18n.language === "en" ? "বাংলা" : "EN"}</span>
+                </button>
+              </div>
+
+              {/* Auth sections */}
+              {!isLoggedIn ? (
                 <div>
                   <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
                     Account
                   </p>
+
                   <div className="space-y-1">
                     <Link
-                      to={getDashboardPath()}
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <LayoutDashboard className="w-4 h-4 text-slate-500" />
-                      <span>{t("dashboard")}</span>
-                    </Link>
-                    <Link
-                      to="/my-account"
+                      to="/login"
                       onClick={() => setMobileOpen(false)}
                       className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
                     >
                       <User className="w-4 h-4 text-slate-500" />
-                      <span>{t("my_account")}</span>
+                      <span>{t("login")}</span>
                     </Link>
+
                     <Link
-                      to="/notifications"
+                      to="/register"
                       onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-white bg-teal-600 hover:bg-teal-700"
                     >
-                      <Bell className="w-4 h-4 text-slate-500" />
-                      <span>{t("notifications")}</span>
-                      {unreadCount > 0 && (
-                        <span className="ml-auto text-[0.7rem] font-semibold text-red-600">
-                          {unreadCount}
-                        </span>
-                      )}
-                    </Link>
-                    <Link
-                      to="/wishlist"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <Heart className="w-4 h-4 text-rose-500" />
-                      <span>{t("wishlist")}</span>
-                    </Link>
-                    <Link
-                      to="/profile"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <Settings2 className="w-4 h-4 text-slate-500" />
-                      <span>{t("edit_profile")}</span>
+                      <UserPlus2 className="w-4 h-4" />
+                      <span>{t("register")}</span>
                     </Link>
                   </div>
                 </div>
+              ) : (
+                <>
+                  {/* Roles */}
+                  <div>
+                    <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                      Roles
+                    </p>
 
-                {/* Logout */}
-                <button
-                  onClick={() => {
-                    logout();
-                    setMobileOpen(false);
-                    navigate("/login");
-                  }}
-                  className="mt-1 flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 text-left"
-                >
-                  <LogOutIcon className="w-4 h-4" />
-                  <span>{t("logout")}</span>
-                </button>
-              </>
-            )}
+                    <div className="space-y-1">
+                      {!hasRole("host") && (
+                        <button
+                          onClick={() => {
+                            handleAddRole("host");
+                            setMobileOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                        >
+                          <Crown className="w-4 h-4 text-teal-600" />
+                          <span>{t("become_host")}</span>
+                        </button>
+                      )}
+
+                      {!hasRole("driver") && (
+                        <button
+                          onClick={() => {
+                            handleAddRole("driver");
+                            setMobileOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                        >
+                          <Bike className="w-4 h-4 text-teal-600" />
+                          <span>{t("become_driver")}</span>
+                        </button>
+                      )}
+
+                      {!hasRole("user") && (
+                        <button
+                          onClick={() => {
+                            handleAddRole("user");
+                            setMobileOpen(false);
+                          }}
+                          className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50 w-full text-left"
+                        >
+                          <User className="w-4 h-4 text-teal-600" />
+                          <span>{t("become_user")}</span>
+                        </button>
+                      )}
+
+                      {roles.length > 1 && (
+                        <div className="px-2 pt-1 text-[0.7rem] text-slate-500">
+                          <span className="font-semibold text-slate-600">
+                            Switch role:
+                          </span>
+                          {roles
+                            .filter((r) => r !== primaryRole)
+                            .map((role) => (
+                              <button
+                                key={role}
+                                onClick={() => {
+                                  handleRoleSwitch(role);
+                                  setMobileOpen(false);
+                                }}
+                                className="block text-teal-600 hover:underline text-xs mt-0.5"
+                              >
+                                {role}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Account */}
+                  <div>
+                    <p className="px-2 text-[0.7rem] font-semibold uppercase text-slate-400 mb-1">
+                      Account
+                    </p>
+
+                    <div className="space-y-1">
+                      <Link
+                        to={getDashboardPath()}
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <LayoutDashboard className="w-4 h-4 text-slate-500" />
+                        <span>{t("dashboard")}</span>
+                      </Link>
+
+                      <Link
+                        to="/my-account"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <User className="w-4 h-4 text-slate-500" />
+                        <span>{t("my_account")}</span>
+                      </Link>
+
+                      <Link
+                        to="/notifications"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Bell className="w-4 h-4 text-slate-500" />
+                        <span>{t("notifications")}</span>
+                        {unreadCount > 0 && (
+                          <span className="ml-auto text-[0.7rem] font-semibold text-red-600">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </Link>
+
+                      <Link
+                        to="/wishlist"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Heart className="w-4 h-4 text-rose-500" />
+                        <span>{t("wishlist")}</span>
+                      </Link>
+
+                      <Link
+                        to="/profile"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <Settings2 className="w-4 h-4 text-slate-500" />
+                        <span>{t("edit_profile")}</span>
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Logout */}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileOpen(false);
+                      navigate("/login");
+                    }}
+                    className="mt-1 flex items-center gap-3 px-2 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50 text-left"
+                  >
+                    <LogOutIcon className="w-4 h-4" />
+                    <span>{t("logout")}</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        </div>,
+        document.body
+      )}
     </header>
   );
 };

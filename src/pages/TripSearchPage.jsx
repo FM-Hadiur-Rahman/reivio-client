@@ -145,74 +145,203 @@ const TripSearchPage = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold">🔎 Filters</h2>
-          <select
-            value={vehicleType}
-            onChange={(e) => {
-              setVehicleType(e.target.value);
-              localStorage.setItem("vehicleType", e.target.value);
-            }}
-            className="w-full border rounded px-2 py-1"
-          >
-            <option value="">All Vehicle Types</option>
-            <option value="car">🚗 Car</option>
-            <option value="bike">🏍️ Bike</option>
-          </select>
-          <input
-            type="number"
-            placeholder="Min Price"
-            value={minPrice}
-            onChange={(e) => {
-              setMinPrice(e.target.value);
-              localStorage.setItem("minPrice", e.target.value);
-            }}
-            className="w-full border rounded px-2 py-1"
-          />
-          <input
-            type="number"
-            placeholder="Max Price"
-            value={maxPrice}
-            onChange={(e) => {
-              setMaxPrice(e.target.value);
-              localStorage.setItem("maxPrice", e.target.value);
-            }}
-            className="w-full border rounded px-2 py-1"
-          />
-          <select
-            value={sortOption}
-            onChange={(e) => {
-              setSortOption(e.target.value);
-              localStorage.setItem("sortOption", e.target.value);
-            }}
-            className="w-full border rounded px-2 py-1"
-          >
-            <option value="date">Sort by Date</option>
-            <option value="price">Sort by Price</option>
-          </select>
-          <button
-            onClick={resetFilters}
-            className="w-full bg-gray-100 hover:bg-gray-200 text-sm py-2 rounded"
-          >
-            🔄 Reset Filters
-          </button>
-        </div>
+    <div className="max-w-6xl mx-auto px-4 py-8 relative">
+      {/* Premium background glow */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -left-20 top-0 h-72 w-72 rounded-full bg-teal-300/20 blur-3xl" />
+        <div className="absolute right-0 top-20 h-80 w-80 rounded-full bg-sky-300/20 blur-3xl" />
+      </div>
 
-        <div className="md:col-span-3 space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">🚗 Ride Results</h2>
-            <button
-              onClick={() => setShowMap(!showMap)}
-              className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1 rounded text-sm"
-            >
-              {showMap ? "📄 List View" : "🗺️ Map View"}
-            </button>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* FILTERS */}
+        <aside className="md:col-span-1">
+          <div className="sticky top-24 rounded-3xl bg-white ring-1 ring-slate-200/80 shadow-sm overflow-hidden">
+            {/* header */}
+            <div className="px-5 pt-5 pb-4 border-b border-slate-100">
+              <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 via-emerald-500 to-sky-500 text-white shadow-sm">
+                  🔎
+                </span>
+                Filters
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Narrow down rides by type, price and sort.
+              </p>
+            </div>
+
+            {/* body */}
+            <div className="px-5 py-5 space-y-4">
+              {/* Vehicle type */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600">
+                  Vehicle Type
+                </label>
+                <select
+                  value={vehicleType}
+                  onChange={(e) => {
+                    setVehicleType(e.target.value);
+                    localStorage.setItem("vehicleType", e.target.value);
+                  }}
+                  className="
+                w-full h-11 rounded-2xl bg-white
+                ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
+                outline-none focus:ring-2 focus:ring-teal-300/60
+              "
+                >
+                  <option value="">All Vehicle Types</option>
+                  <option value="car">🚗 Car</option>
+                  <option value="bike">🏍️ Bike</option>
+                </select>
+              </div>
+
+              {/* Price range */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-slate-600">
+                  Price range
+                </label>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] text-slate-500">Min</span>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={minPrice}
+                      onChange={(e) => {
+                        setMinPrice(e.target.value);
+                        localStorage.setItem("minPrice", e.target.value);
+                      }}
+                      className="
+                    w-full h-11 rounded-2xl bg-white
+                    ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
+                    outline-none focus:ring-2 focus:ring-teal-300/60
+                    placeholder:text-slate-400
+                  "
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] text-slate-500">Max</span>
+                    <input
+                      type="number"
+                      placeholder="Any"
+                      value={maxPrice}
+                      onChange={(e) => {
+                        setMaxPrice(e.target.value);
+                        localStorage.setItem("maxPrice", e.target.value);
+                      }}
+                      className="
+                    w-full h-11 rounded-2xl bg-white
+                    ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
+                    outline-none focus:ring-2 focus:ring-teal-300/60
+                    placeholder:text-slate-400
+                  "
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sort */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-600">
+                  Sort
+                </label>
+                <select
+                  value={sortOption}
+                  onChange={(e) => {
+                    setSortOption(e.target.value);
+                    localStorage.setItem("sortOption", e.target.value);
+                  }}
+                  className="
+                w-full h-11 rounded-2xl bg-white
+                ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
+                outline-none focus:ring-2 focus:ring-teal-300/60
+              "
+                >
+                  <option value="date">Sort by Date</option>
+                  <option value="price">Sort by Price</option>
+                </select>
+              </div>
+
+              {/* Reset */}
+              <button
+                onClick={resetFilters}
+                className="
+              w-full rounded-2xl bg-white ring-1 ring-slate-200/80
+              py-2.5 text-sm font-semibold text-slate-700
+              hover:bg-slate-50 hover:shadow-sm transition
+            "
+              >
+                🔄 Reset Filters
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* RESULTS */}
+        <main className="md:col-span-3 space-y-4">
+          {/* Header row */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-slate-900 flex items-center gap-2">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-600 to-emerald-500 text-white shadow-sm">
+                  🚗
+                </span>
+                Ride Results
+                <span className="ml-2 inline-flex items-center rounded-full bg-teal-50 text-teal-700 ring-1 ring-teal-200 px-2.5 py-1 text-xs font-semibold">
+                  {filteredTrips.length}
+                </span>
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Showing {filteredTrips.length} ride(s)
+              </p>
+            </div>
+
+            {/* Teal segmented toggle */}
+            <div className="relative inline-flex items-center rounded-full bg-white ring-1 ring-slate-200/80 shadow-sm p-1">
+              <div
+                className={`
+              absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-teal-600
+              transition-transform duration-300 ease-out
+              ${showMap ? "translate-x-full" : "translate-x-0"}
+            `}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowMap(false)}
+                className={`relative z-10 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+                  !showMap ? "text-white" : "text-slate-700 hover:text-teal-700"
+                }`}
+              >
+                📄 List
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowMap(true)}
+                className={`relative z-10 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+                  showMap ? "text-white" : "text-slate-700 hover:text-teal-700"
+                }`}
+              >
+                🗺️ Map
+              </button>
+            </div>
           </div>
 
+          {/* Content */}
           {showMap ? (
-            <div ref={mapRef} className="w-full h-96 border rounded" />
+            <div className="rounded-3xl bg-white ring-1 ring-slate-200/80 shadow-sm overflow-hidden">
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <p className="text-sm font-semibold text-slate-900">
+                  Route preview
+                </p>
+                <span className="text-xs text-slate-500">
+                  Tap marker for details
+                </span>
+              </div>
+              <div ref={mapRef} className="w-full h-96" />
+            </div>
           ) : (
             <RideResults
               trips={paginatedTrips}
@@ -221,29 +350,50 @@ const TripSearchPage = () => {
             />
           )}
 
-          {!showMap && (
-            <div className="flex justify-center items-center gap-4 mt-4">
+          {/* Pagination */}
+          {!showMap && filteredTrips.length > 0 && (
+            <div className="flex flex-col sm:flex-row justify-center items-center gap-3 mt-2">
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => p - 1)}
-                className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
+                className="
+              rounded-full px-4 py-2 text-sm font-semibold
+              bg-white text-teal-700 ring-1 ring-teal-200 shadow-sm
+              hover:bg-teal-50 active:scale-[0.99]
+              disabled:opacity-50 disabled:ring-slate-200 disabled:text-slate-500 disabled:hover:bg-white
+              transition
+            "
               >
                 ◀ Previous
               </button>
-              <span className="text-sm">
-                Page {currentPage} of{" "}
-                {Math.ceil(filteredTrips.length / itemsPerPage)}
+
+              <span className="text-sm text-slate-600">
+                Page{" "}
+                <span className="font-semibold text-slate-900">
+                  {currentPage}
+                </span>{" "}
+                of{" "}
+                <span className="font-semibold text-slate-900">
+                  {Math.max(1, Math.ceil(filteredTrips.length / itemsPerPage))}
+                </span>
               </span>
+
               <button
                 disabled={currentPage * itemsPerPage >= filteredTrips.length}
                 onClick={() => setCurrentPage((p) => p + 1)}
-                className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
+                className="
+              rounded-full px-4 py-2 text-sm font-semibold
+              bg-teal-600 text-white shadow-sm
+              hover:bg-teal-700 active:scale-[0.99]
+              disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200
+              transition
+            "
               >
                 Next ▶
               </button>
             </div>
           )}
-        </div>
+        </main>
       </div>
     </div>
   );
