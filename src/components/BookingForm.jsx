@@ -1,5 +1,5 @@
-// BookingForm.jsx — Final i18n + Bangla number support (premium UI)
-import React, { useState, useEffect } from "react";
+// BookingForm.jsx — Premium i18n + Bangla number support + fixes
+import React, { useMemo, useState, useEffect } from "react";
 import axios from "axios";
 import { DateRange } from "react-date-range";
 import { addDays } from "date-fns";
@@ -8,12 +8,22 @@ import { useTranslation } from "react-i18next";
 import { formatBanglaNumber } from "../utils/formatBanglaNumber";
 import CalendarModal from "./CalendarModal";
 import { useMediaQuery } from "react-responsive";
+import { enUS, bn } from "date-fns/locale";
+import { useNavigate, useLocation } from "react-router-dom";
+import { isWithinInterval } from "date-fns";
+
+import {
+  CalendarDays,
+  Users,
+  Tag,
+  ShieldCheck,
+  Loader2,
+  TicketPercent,
+} from "lucide-react";
 
 import "react-toastify/dist/ReactToastify.css";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
-import { enUS, bn } from "date-fns/locale";
-import { Navigate } from "react-router-dom";
 
 const BookingForm = ({
   listingId,
@@ -26,6 +36,12 @@ const BookingForm = ({
   const { t, i18n } = useTranslation();
   const isBn = i18n.language === "bn";
 
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isMobile = useMediaQuery({ maxWidth: 640 });
+  const [modalOpen, setModalOpen] = useState(false);
+
   const [range, setRange] = useState([
     {
       startDate: new Date(),
@@ -33,57 +49,73 @@ const BookingForm = ({
       key: "selection",
     },
   ]);
+
   const [guests, setGuests] = useState(1);
+
   const [nights, setNights] = useState(1);
   const [serviceFee, setServiceFee] = useState(0);
   const [tax, setTax] = useState(0);
   const [total, setTotal] = useState(0);
+
   const [bookedRanges, setBookedRanges] = useState([]);
+
   const [promoCode, setPromoCode] = useState("");
   const [promoDiscount, setPromoDiscount] = useState(0);
   const [promoMessage, setPromoMessage] = useState("");
 
-  const isMobile = useMediaQuery({ maxWidth: 640 });
-  const [modalOpen, setModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [promoLoading, setPromoLoading] = useState(false);
 
-  const format = (num) => (isBn ? formatBanglaNumber(num) : num);
+  // ✅ robust auth read
+  const auth = useMemo(() => {
+    const direct = localStorage.getItem("token");
+    let user = null;
+    try {
+      user = JSON.parse(localStorage.getItem("user"));
+    } catch {}
+    const token = direct || user?.token || null;
+    return { token, user };
+  }, []);
 
+  const formatNum = (num) => (isBn ? formatBanglaNumber(num) : num);
+
+  // ✅ correct interval check for disabled days
   const isDateBooked = (date) =>
-    bookedRanges.some((r) => date >= r.startDate && date <= r.endDate);
+    bookedRanges.some((r) =>
+      isWithinInterval(date, { start: r.startDate, end: r.endDate })
+    );
 
+  // Nights + totals
   useEffect(() => {
     const { startDate, endDate } = range[0];
     const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
     const validNights = diff > 0 ? diff : 0;
+
     const subtotal = price * validNights;
     const sFee = Math.round(subtotal * 0.1);
-    const t = Math.round(sFee * 0.15);
+    const txx = Math.round(sFee * 0.15);
 
     setNights(validNights);
     setServiceFee(sFee);
-    setTax(t);
-    // keeping your original total behaviour (tax shown separately)
+    setTax(txx);
+
+    // keep your behavior: total excludes tax line (tax shown as note)
     setTotal(subtotal + sFee);
   }, [range, price]);
 
+  // Load booked + blocked ranges
   useEffect(() => {
     axios
       .get(`${import.meta.env.VITE_API_URL}/api/bookings/listing/${listingId}`)
       .then((res) => {
-        const booked = res.data.map((b) => ({
+        const booked = (res.data || []).map((b) => ({
           startDate: new Date(b.dateFrom),
           endDate: new Date(b.dateTo),
-          key: "booked",
-          color: "#9ca3af",
-          disabled: true,
         }));
 
-        const blocked = blockedDates.map((r) => ({
+        const blocked = (blockedDates || []).map((r) => ({
           startDate: new Date(r.from),
           endDate: new Date(r.to),
-          key: "blocked",
-          color: "#9333ea",
-          disabled: true,
         }));
 
         setBookedRanges([...booked, ...blocked]);
@@ -95,19 +127,26 @@ const BookingForm = ({
   }, [listingId, blockedDates, t]);
 
   const handleApplyPromo = async () => {
+    if (!promoCode?.trim()) {
+      setPromoDiscount(0);
+      setPromoMessage(t("booking_form.invalid_code"));
+      return;
+    }
     try {
+      setPromoLoading(true);
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/promocode/validate`,
         {
-          code: promoCode,
+          code: promoCode.trim(),
           type: bookingMode === "combined" ? "both" : "stay",
           totalAmount: total,
         }
       );
-      setPromoDiscount(res.data.discount);
+
+      setPromoDiscount(res.data.discount || 0);
       setPromoMessage(
         t("booking_form.discount_applied", {
-          discount: format(res.data.discount),
+          discount: formatNum(res.data.discount || 0),
         })
       );
     } catch (err) {
@@ -115,33 +154,40 @@ const BookingForm = ({
       setPromoMessage(
         err.response?.data?.message || t("booking_form.invalid_code")
       );
+    } finally {
+      setPromoLoading(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user"));
+    if (submitting) return;
 
-    // 🔐 not logged in → show toast + redirect to login
-    if (!token || !user) {
-      toast.info(
-        t("booking_form.login_required") ||
-          "Please log in to book a stay or ride."
+    // ✅ prevent invalid nights
+    if (!nights || nights <= 0) {
+      toast.error(
+        t("booking_form.select_valid_dates") ||
+          "Select valid dates (min 1 night)."
       );
-      Navigate("/login", {
-        state: { from: window.location.pathname + window.location.search },
+      return;
+    }
+
+    // 🔐 not logged in → toast + redirect to login
+    if (!auth.token || !auth.user) {
+      toast.info(t("booking_form.login_required") || "Please log in to book.");
+      navigate("/login", {
+        state: { from: location.pathname + location.search },
       });
       return;
     }
+
+    // combined trip past check
     if (
       bookingMode === "combined" &&
       selectedTrip &&
       new Date(selectedTrip.date) < new Date()
     ) {
-      toast.error(
-        "🚫 Selected trip is in the past. Please choose a valid trip."
-      );
+      toast.error("Selected trip is in the past. Please choose a valid trip.");
       return;
     }
 
@@ -153,6 +199,9 @@ const BookingForm = ({
         : 0);
 
     try {
+      setSubmitting(true);
+
+      // Combined stay + ride
       if (bookingMode === "combined" && selectedTrip) {
         const bookingRes = await axios.post(
           `${import.meta.env.VITE_API_URL}/api/combined-bookings`,
@@ -165,7 +214,7 @@ const BookingForm = ({
             tripId: selectedTrip._id,
             promoCode: promoCode || null,
           },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${auth.token}` } }
         );
 
         const { bookingId, amount } = bookingRes.data;
@@ -176,22 +225,21 @@ const BookingForm = ({
             bookingId,
             amount,
             customer: {
-              name: user.name,
-              email: user.email,
-              address: user.address || "Bangladesh",
-              phone: user.phone,
+              name: auth.user.name,
+              email: auth.user.email,
+              address: auth.user.address || "Bangladesh",
+              phone: auth.user.phone,
             },
           },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${auth.token}` } }
         );
 
         if (combinedRes.data?.gatewayUrl) {
-          toast.success("✅ Redirecting to combined payment...");
+          toast.success("Redirecting to combined payment...");
           window.location.href = combinedRes.data.gatewayUrl;
         } else {
-          toast.error("❌ Combined payment URL not received.");
+          toast.error("Combined payment URL not received.");
         }
-
         return;
       }
 
@@ -205,7 +253,7 @@ const BookingForm = ({
           guests,
           promoCode: promoCode || null,
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${auth.token}` } }
       );
 
       const booking = res.data;
@@ -216,47 +264,53 @@ const BookingForm = ({
           amount: finalAmount,
           bookingId: booking._id,
           customer: {
-            name: user.name,
-            email: user.email,
-            address: user.address || "Bangladesh",
-            phone: user.phone,
+            name: auth.user.name,
+            email: auth.user.email,
+            address: auth.user.address || "Bangladesh",
+            phone: auth.user.phone,
           },
         },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${auth.token}` } }
       );
 
       if (paymentRes.data?.url) {
-        toast.success("✅ Redirecting to payment gateway...");
+        toast.success("Redirecting to payment gateway...");
         window.location.href = paymentRes.data.url;
       } else {
-        toast.error("❌ Payment URL not received.");
+        toast.error("Payment URL not received.");
       }
     } catch (err) {
       toast.error(
         err?.response?.status === 409
           ? t("booking_form.dates_unavailable") || "These dates are unavailable"
-          : "Something went wrong. Please try again."
+          : t("booking_form.generic_error") ||
+              "Something went wrong. Please try again."
       );
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const subtotal = price * nights;
+  const displayStayTotal = total - promoDiscount;
+  const displayCombinedTotal =
+    displayStayTotal +
+    (bookingMode === "combined" && selectedTrip ? selectedTrip.farePerSeat : 0);
 
   return (
     <>
       <ToastContainer />
       <form
         onSubmit={handleSubmit}
-        className="
-          rounded-2xl bg-white/95 border border-slate-200/80 shadow-xl
-          ring-1 ring-slate-900/5 p-5 sm:p-6 space-y-5
-        "
+        className="rounded-2xl bg-white/95 border border-slate-200/80 shadow-xl ring-1 ring-slate-900/5 p-5 sm:p-6 space-y-5"
       >
         {/* PRICE HEADER */}
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <div className="inline-flex items-baseline gap-1.5">
               <span className="text-2xl font-semibold text-slate-900">
-                ৳{format(price)}
+                ৳{formatNum(price)}
               </span>
               <span className="text-xs uppercase tracking-[0.18em] text-slate-500">
                 {t("booking_form.night_label") || "/ night"}
@@ -272,9 +326,7 @@ const BookingForm = ({
           </div>
 
           <div className="inline-flex items-center gap-2 rounded-2xl bg-slate-900/70 px-3 py-2 ring-1 ring-slate-700/80">
-            <span className="text-[0.68rem] font-semibold tracking-[0.2em] text-slate-200 uppercase">
-              Reivio
-            </span>
+            <ShieldCheck className="w-4 h-4 text-emerald-300" />
             <div className="text-right leading-tight">
               <p className="text-[0.65rem] text-slate-300">
                 {t("booking_form.badge_safe") || "Safe & Verified"}
@@ -288,7 +340,8 @@ const BookingForm = ({
 
         {/* DATE PICKER */}
         <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-3 sm:p-4 space-y-3">
-          <p className="text-xs font-medium text-slate-600 mb-1">
+          <p className="text-xs font-medium text-slate-600 mb-1 inline-flex items-center gap-2">
+            <CalendarDays className="w-4 h-4 text-teal-700" />
             {t("booking_form.choose_dates") || "Choose your dates"}
           </p>
 
@@ -297,10 +350,10 @@ const BookingForm = ({
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className="w-full rounded-xl bg-white text-left px-3 py-2.5 text-sm border border-slate-200 flex items-center justify-between"
+                className="w-full rounded-xl bg-white text-left px-3 py-2.5 text-sm border border-slate-200 flex items-center justify-between hover:bg-slate-50 transition"
               >
-                <span className="text-slate-600">
-                  📅 {range[0].startDate?.toDateString()} →{" "}
+                <span className="text-slate-700">
+                  {range[0].startDate?.toDateString()} →{" "}
                   {range[0].endDate?.toDateString()}
                 </span>
                 <span className="text-xs text-slate-400">
@@ -323,7 +376,7 @@ const BookingForm = ({
                 ranges={range}
                 onChange={(item) => setRange([item.selection])}
                 minDate={new Date()}
-                rangeColors={["#f43f5e"]}
+                rangeColors={["#14b8a6"]} // teal
                 disabledDay={isDateBooked}
                 editableDateInputs={true}
                 months={1}
@@ -335,7 +388,7 @@ const BookingForm = ({
 
           <div className="flex flex-wrap gap-3 text-[11px] sm:text-xs mt-1">
             <div className="inline-flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-rose-500" />
+              <span className="w-3 h-3 rounded-full bg-teal-500" />
               <span className="text-slate-600">
                 {t("booking_form.selected") || "Selected"}
               </span>
@@ -351,7 +404,8 @@ const BookingForm = ({
 
         {/* GUESTS */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-slate-700 inline-flex items-center gap-2">
+            <Users className="w-4 h-4 text-teal-700" />
             {t("booking_form.guests")}
           </label>
 
@@ -381,33 +435,46 @@ const BookingForm = ({
           </div>
 
           <p className="text-xs text-slate-500">
-            {t("booking_form.max_guests_note", {
-              max: format(maxGuests),
-            })}
+            {t("booking_form.max_guests_note", { max: formatNum(maxGuests) })}
           </p>
         </div>
 
         {/* PROMO CODE */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="block text-sm font-medium text-slate-700 inline-flex items-center gap-2">
+            <Tag className="w-4 h-4 text-teal-700" />
             {t("booking_form.promo_code")}
           </label>
+
           <div className="flex gap-2">
             <input
               type="text"
               value={promoCode}
               onChange={(e) => setPromoCode(e.target.value)}
               placeholder={t("booking_form.promo_placeholder")}
-              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
+              className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400"
             />
+
             <button
               type="button"
               onClick={handleApplyPromo}
-              className="rounded-xl bg-teal-400 text-white px-3 py-2 text-sm font-semibold shadow-sm hover:bg-slate-800 transition-colors"
+              disabled={promoLoading}
+              className="rounded-xl bg-teal-600 text-white px-3 py-2 text-sm font-extrabold shadow-sm hover:bg-teal-700 transition disabled:opacity-60 inline-flex items-center gap-2"
             >
-              {t("booking_form.apply")}
+              {promoLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {t("booking_form.applying") || "Applying"}
+                </>
+              ) : (
+                <>
+                  <TicketPercent className="w-4 h-4" />
+                  {t("booking_form.apply")}
+                </>
+              )}
             </button>
           </div>
+
           {promoMessage && (
             <p
               className={`text-xs mt-1 ${
@@ -425,72 +492,82 @@ const BookingForm = ({
             <div className="flex justify-between">
               <span className="text-slate-600">
                 {t("booking_form.summary.subtotal", {
-                  price: format(price),
-                  nights: format(nights),
+                  price: formatNum(price),
+                  nights: formatNum(nights),
                 })}
               </span>
               <span className="font-medium text-slate-800">
-                ৳{format(price * nights)}
+                ৳{formatNum(subtotal)}
               </span>
             </div>
+
             <div className="flex justify-between">
               <span className="text-slate-600">
                 {t("booking_form.summary.service_fee")}
               </span>
               <span className="font-medium text-slate-800">
-                ৳{format(serviceFee)}
+                ৳{formatNum(serviceFee)}
               </span>
             </div>
+
             <div className="flex justify-between text-xs text-slate-500">
               <span>{t("booking_form.summary.tax_note")}</span>
               <span className="line-through decoration-slate-400 decoration-2">
-                ৳{format(tax)}
+                ৳{formatNum(tax)}
               </span>
             </div>
 
             {promoDiscount > 0 && (
-              <div className="flex justify-between text-emerald-600">
+              <div className="flex justify-between text-emerald-700 font-semibold">
                 <span>{t("booking_form.summary.promo_discount")}</span>
-                <span>- ৳{format(promoDiscount)}</span>
+                <span>- ৳{formatNum(promoDiscount)}</span>
               </div>
             )}
 
             <div className="border-t border-slate-200 pt-2 mt-1 flex justify-between text-sm sm:text-base font-semibold text-slate-900">
               <span>{t("booking_form.summary.total")}</span>
-              <span>৳{format(total - promoDiscount)}</span>
+              <span>৳{formatNum(displayStayTotal)}</span>
             </div>
+
+            {/* COMBINED MODE SUMMARY */}
+            {bookingMode === "combined" && selectedTrip && (
+              <div className="mt-2 rounded-xl bg-white border border-sky-200 px-3 py-3 space-y-2 text-sm shadow-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-600">
+                    {t("booking_form.ride_fare")}
+                  </span>
+                  <span className="font-medium text-slate-900">
+                    ৳{formatNum(selectedTrip.farePerSeat)}
+                  </span>
+                </div>
+                <div className="border-t border-slate-200 pt-2 flex justify-between text-sm sm:text-base font-semibold text-slate-900">
+                  <span>{t("booking_form.summary.combined_total")}</span>
+                  <span>৳{formatNum(displayCombinedTotal)}</span>
+                </div>
+              </div>
+            )}
 
             {/* RESERVE BUTTON */}
             <button
               type="submit"
+              disabled={submitting || nights <= 0}
               className="
-            w-full rounded-2xl bg-gradient-to-r from-teal-500 via-[#ff6f61] to-teal-400
-            text-white py-2.5 text-sm font-semibold shadow-lg
-            hover:brightness-105 active:scale-[0.99] transition-all
-          "
+                w-full rounded-2xl bg-gradient-to-r from-teal-600 via-cyan-500 to-teal-500
+                text-white py-2.5 text-sm font-extrabold shadow-lg
+                hover:brightness-105 active:scale-[0.99] transition-all
+                disabled:opacity-60 disabled:cursor-not-allowed
+                inline-flex items-center justify-center gap-2
+              "
             >
-              {t("booking_form.reserve")}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {t("booking_form.processing") || "Processing..."}
+                </>
+              ) : (
+                t("booking_form.reserve")
+              )}
             </button>
-          </div>
-        )}
-
-        {/* COMBINED MODE SUMMARY */}
-        {bookingMode === "combined" && selectedTrip && (
-          <div className="mt-3 rounded-xl bg-white border border-sky-200 px-3 py-3 space-y-2 text-sm shadow-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-600">
-                {t("booking_form.ride_fare")}
-              </span>
-              <span className="font-medium text-slate-900">
-                ৳{format(selectedTrip.farePerSeat)}
-              </span>
-            </div>
-            <div className="border-t border-slate-200 pt-2 flex justify-between text-sm sm:text-base font-semibold text-slate-900">
-              <span>{t("booking_form.summary.combined_total")}</span>
-              <span>
-                ৳{format(total - promoDiscount + selectedTrip.farePerSeat)}
-              </span>
-            </div>
           </div>
         )}
       </form>

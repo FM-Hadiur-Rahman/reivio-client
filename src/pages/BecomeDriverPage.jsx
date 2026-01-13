@@ -9,9 +9,9 @@ export default function BecomeDriverPage() {
   const { token, updateUser } = useAuth();
 
   const [form, setForm] = useState({
-    drivingLicense: "",
+    licenseNumber: "",
     vehicleType: "",
-    seatsOffered: "",
+    seats: "",
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -30,16 +30,26 @@ export default function BecomeDriverPage() {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/auth/become-driver`,
         {
-          drivingLicense: form.drivingLicense,
+          licenseNumber: form.licenseNumber,
           vehicleType: form.vehicleType,
-          seatsOffered: Number(form.seatsOffered),
+          seats: Number(form.seats),
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      updateUser(res.data); // should return updated user data
-      toast.success("✅ You are now a Driver!");
-      navigate("/dashboard/driver");
+      const data = res.data;
+
+      // ✅ keep your AuthContext updated
+      updateUser(data.user ?? data);
+
+      // ✅ NEW: don't go to driver dashboard unless approved/active
+      if (data.code === "DRIVER_ACTIVE" || data.driver?.approved === true) {
+        toast.success("✅ You are now a Driver!");
+        navigate("/dashboard/driver");
+      } else {
+        toast.info("✅ Submitted! Waiting for admin approval.");
+        navigate("/dashboard"); // or "/my-account" / "/profile"
+      }
     } catch (err) {
       const data = err.response?.data;
       if (data?.fields) setErrors(data.fields);
@@ -56,14 +66,14 @@ export default function BecomeDriverPage() {
       <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <input
-            name="drivingLicense"
-            value={form.drivingLicense}
+            name="licenseNumber"
+            value={form.licenseNumber}
             onChange={onChange}
             placeholder="Driving License Number"
             className="w-full px-4 py-2 border rounded"
           />
-          {errors.drivingLicense && (
-            <p className="text-sm text-red-600 mt-1">{errors.drivingLicense}</p>
+          {errors.licenseNumber && (
+            <p className="text-sm text-red-600 mt-1">{errors.licenseNumber}</p>
           )}
         </div>
 
@@ -86,14 +96,14 @@ export default function BecomeDriverPage() {
         <div>
           <input
             type="number"
-            name="seatsOffered"
-            value={form.seatsOffered}
+            name="seats"
+            value={form.seats}
             onChange={onChange}
             placeholder="Seats Offered"
             className="w-full px-4 py-2 border rounded"
           />
-          {errors.seatsOffered && (
-            <p className="text-sm text-red-600 mt-1">{errors.seatsOffered}</p>
+          {errors.seats && (
+            <p className="text-sm text-red-600 mt-1">{errors.seats}</p>
           )}
         </div>
 

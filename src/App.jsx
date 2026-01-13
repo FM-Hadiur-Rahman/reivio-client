@@ -69,6 +69,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AdminListings from "./pages/AdminListings";
 import AdminBookings from "./pages/AdminBookings";
 import AdminKYC from "./pages/AdminKYC";
+import AdminRoleRequests from "./pages/AdminRoleRequests";
 import AdminUserBreakdown from "./pages/AdminUserBreakdown";
 import AdminFlagged from "./pages/AdminFlagged";
 import AdminRevenue from "./pages/AdminRevenue";
@@ -399,6 +400,15 @@ function App() {
             }
           />
           <Route
+            path="/admin/role-requests"
+            element={
+              <ProtectedRouteWrapper role="admin">
+                <AdminRoleRequests />
+              </ProtectedRouteWrapper>
+            }
+          />
+
+          <Route
             path="/admin/payment-accounts"
             element={
               <ProtectedRouteWrapper role="admin">
@@ -482,7 +492,7 @@ function App() {
           <Route
             path="/become-driver"
             element={
-              <ProtectedRouteWrapper role="driver">
+              <ProtectedRouteWrapper role={["user", "host", "driver"]}>
                 <BecomeDriverPage />
               </ProtectedRouteWrapper>
             }

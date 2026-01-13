@@ -77,25 +77,31 @@ const Navbar = () => {
 
   const handleAddRole = async (role) => {
     try {
-      // ✅ Special: becoming driver needs extra info
       if (role === "driver") {
+        if (roles.includes("driver")) return await handleRoleSwitch("driver");
         setDropdownOpen(false);
         setMobileOpen(false);
-        navigate("/become-driver"); // new page
+        navigate("/become-driver");
         return;
       }
 
+      // ✅ Only host should call add-role (request)
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/auth/add-role`,
         { role },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      updateUser(res.data);
-      toast.success(`✅ ${t("added_new_role")} ➡ ${role.toUpperCase()}`);
-      navigate(getDashboardPath(role));
+      // ✅ Don't updateUser(res.data) because roles didn't change
+      toast.info(
+        res.data?.message || "✅ Request submitted. Waiting for admin approval."
+      );
+
       setDropdownOpen(false);
       setMobileOpen(false);
+
+      // optional: send user to a page where they see status
+      navigate("/my-account"); // or "/profile"
     } catch (err) {
       toast.error(
         err.response?.data?.message || t("error.add_role_failed", { role })
@@ -127,6 +133,14 @@ const Navbar = () => {
         setDropdownOpen(false);
         setMobileOpen(false);
         navigate("/become-driver");
+        return;
+      }
+      if (data?.code === "DRIVER_NOT_APPROVED") {
+        toast.info("Driver pending admin approval");
+        return;
+      }
+      if (data?.code === "HOST_NOT_APPROVED") {
+        toast.info("Host pending admin approval");
         return;
       }
 
