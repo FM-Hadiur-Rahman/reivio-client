@@ -79,7 +79,7 @@ import ReviewPage from "./pages/ReviewPage";
 import AdminOverduePayouts from "./pages/AdminOverduePayouts";
 import AdminPromocodes from "./pages/AdminPromocodes";
 import AdminBanners from "./pages/AdminBanners";
-import AdminLogs from "./pages/adminLogs";
+import AdminLogs from "./pages/AdminLogs";
 import AdminReferrals from "./pages/AdminReferrals";
 import AdminSettings from "./pages/AdminSettings";
 import AdminUserDetail from "./pages/AdminUserDetail";
