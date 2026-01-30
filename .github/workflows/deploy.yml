@@ -49,6 +49,10 @@ jobs:
       # IMPORTANT: dist/ is for Vite. Change if your output differs (e.g., build/ or out/)
       - name: Deploy to S3
         run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
+      - name: Debug CloudFront ID
+        run: |
+          echo "CF_ID='${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}'"
+          aws cloudfront get-distribution --id "${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}"
 
       - name: Invalidate CloudFront
         run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
