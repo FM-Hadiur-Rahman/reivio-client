@@ -3,29 +3,52 @@ name: Deploy Reivio Frontend
 on:
   push:
     branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - run: npm ci
-      - run: npm run build
+      - name: Debug versions + files
+        run: |
+          echo "SHA=$GITHUB_SHA"
+          node -v
+          npm -v
+          echo "PWD=$(pwd)"
+          ls -la
+          echo "---- package.json ----"
+          test -f package.json && cat package.json | head -n 80 || echo "package.json NOT FOUND"
+          echo "---- package-lock.json ----"
+          test -f package-lock.json && (ls -la package-lock.json && cat package-lock.json | head -n 40) || echo "package-lock.json NOT FOUND"
 
-      - uses: aws-actions/configure-aws-credentials@v4
+      # Try strict, reproducible install first
+      - name: Install dependencies (prefer npm ci)
+        run: |
+          npm ci || (echo "npm ci failed, falling back to npm install" && npm install)
+
+      - name: Build
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
+      # IMPORTANT: dist/ is for Vite. Change if your output differs (e.g., build/ or out/)
+      - name: Deploy to S3
+        run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
 
-      - run: aws cloudfront create-invalidation \
-          --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-          --paths "/*"
+      - name: Invalidate CloudFront
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
