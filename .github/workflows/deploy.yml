@@ -49,6 +49,9 @@ jobs:
       # IMPORTANT: dist/ is for Vite. Change if your output differs (e.g., build/ or out/)
       - name: Deploy to S3
         run: aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} --delete
+      - name: List CloudFront distributions
+        run: aws cloudfront list-distributions --query "DistributionList.Items[].{Id:Id,Domain:DomainName,Aliases:Aliases.Items}" --output table
+
       - name: Who am I?
         run: aws sts get-caller-identity
       - name: Debug CloudFront ID
