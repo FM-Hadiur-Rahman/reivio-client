@@ -1,518 +1,3 @@
-// // src/pages/CreateListingPage.jsx
-// import React, {
-//   useCallback,
-//   useEffect,
-//   useMemo,
-//   useRef,
-//   useState,
-// } from "react";
-// import { Link, useNavigate } from "react-router-dom";
-// import AdminLayout from "../components/AdminLayout"; // keep/remove if you wrap pages
-// import MapboxAutocomplete from "../components/MapboxAutocomplete";
-// import { divisions } from "../data/districts";
-// import { api } from "../services/api";
-// import { toast } from "react-toastify";
-
-// const MAX_IMAGES = 10;
-// const MAX_IMAGE_MB = 5;
-// const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/avif"];
-
-// const CreateListingPage = () => {
-//   const [form, setForm] = useState({
-//     title: "",
-//     price: "",
-//     maxGuests: "",
-//     division: "",
-//     district: "",
-//     roomType: "",
-//     description: "",
-//     houseRules: "",
-//     location: null, // { type:'Point', coordinates:[lon,lat], address }
-//   });
-//   const [images, setImages] = useState([]);
-//   const [previews, setPreviews] = useState([]); // object URLs
-//   const [uploading, setUploading] = useState(false);
-//   const [revgeoBusy, setRevgeoBusy] = useState(false);
-//   const navigate = useNavigate();
-//   const mountedRef = useRef(true);
-
-//   // fresh snapshot of logged-in user
-//   const user = useMemo(() => {
-//     try {
-//       return JSON.parse(localStorage.getItem("user")) || null;
-//     } catch {
-//       return null;
-//     }
-//   }, []);
-
-//   const handleChange = (e) =>
-//     setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
-
-//   const extractAdminFromMapbox = useCallback(async (lon, lat) => {
-//     try {
-//       setRevgeoBusy(true);
-//       const res = await fetch(
-//         `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?types=place,region&access_token=${
-//           import.meta.env.VITE_MAPBOX_TOKEN
-//         }`
-//       );
-//       if (!res.ok) throw new Error(`Mapbox ${res.status}`);
-//       const data = await res.json();
-//       const features = data?.features ?? [];
-//       const district = features.find((f) => f.place_type?.includes("place"));
-//       const division = features.find((f) => f.place_type?.includes("region"));
-//       setForm((prev) => ({
-//         ...prev,
-//         division: division?.text || prev.division || "",
-//         district: district?.text || prev.district || "",
-//       }));
-//     } catch (err) {
-//       console.warn("❌ Reverse geocoding failed", err);
-//       toast.warn("Couldn’t auto-fill division/district. Please set manually.");
-//     } finally {
-//       setRevgeoBusy(false);
-//     }
-//   }, []);
-
-//   const handleMapSelect = ({ coordinates, address }) => {
-//     setForm((prev) => ({
-//       ...prev,
-//       location: { type: "Point", coordinates, address },
-//     }));
-//     extractAdminFromMapbox(coordinates[0], coordinates[1]);
-//   };
-
-//   const handleAutoDetect = () => {
-//     if (!navigator.geolocation) {
-//       toast.warn("Geolocation not supported in this browser.");
-//       return;
-//     }
-//     navigator.geolocation.getCurrentPosition(
-//       async (pos) => {
-//         const lat = pos.coords.latitude;
-//         const lon = pos.coords.longitude;
-//         try {
-//           const res = await fetch(
-//             `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${
-//               import.meta.env.VITE_MAPBOX_TOKEN
-//             }`
-//           );
-//           const data = await res.json();
-//           const address = data?.features?.[0]?.place_name || "";
-//           setForm((prev) => ({
-//             ...prev,
-//             location: { type: "Point", coordinates: [lon, lat], address },
-//           }));
-//         } finally {
-//           extractAdminFromMapbox(lon, lat);
-//         }
-//       },
-//       () => toast.error("Failed to get current location.")
-//     );
-//   };
-
-//   // image selection with validation
-//   const onPickImages = (files) => {
-//     const arr = Array.from(files || []);
-//     if (!arr.length) return;
-//     if (arr.length + images.length > MAX_IMAGES) {
-//       toast.warn(`Max ${MAX_IMAGES} images allowed.`);
-//       return;
-//     }
-//     const bad = arr.find(
-//       (f) =>
-//         !ALLOWED_TYPES.includes(f.type) || f.size > MAX_IMAGE_MB * 1024 * 1024
-//     );
-//     if (bad) {
-//       toast.error(
-//         `Only JPG/PNG/WebP/AVIF up to ${MAX_IMAGE_MB}MB each are allowed.`
-//       );
-//       return;
-//     }
-//     const next = [...images, ...arr];
-//     setImages(next);
-
-//     // previews
-//     const newPrevs = arr.map((f) => URL.createObjectURL(f));
-//     setPreviews((p) => [...p, ...newPrevs]);
-//   };
-
-//   const removeImage = (idx) => {
-//     setImages((prev) => prev.filter((_, i) => i !== idx));
-//     setPreviews((prev) => {
-//       // revoke object URL
-//       URL.revokeObjectURL(prev[idx]);
-//       return prev.filter((_, i) => i !== idx);
-//     });
-//   };
-
-//   // unload protection while uploading
-//   useEffect(() => {
-//     mountedRef.current = true;
-//     const beforeUnload = (e) => {
-//       if (uploading) {
-//         e.preventDefault();
-//         e.returnValue = "";
-//       }
-//     };
-//     window.addEventListener("beforeunload", beforeUnload);
-//     return () => {
-//       mountedRef.current = false;
-//       window.removeEventListener("beforeunload", beforeUnload);
-//       previews.forEach((u) => URL.revokeObjectURL(u));
-//     };
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [uploading]);
-
-//   const token = useMemo(() => localStorage.getItem("token"), []);
-
-//   const missingFlags = useMemo(() => {
-//     if (!user) return [];
-//     const out = [];
-//     if (!(user.roles || []).includes("host")) out.push("Switch to Host");
-//     if ((user?.kyc?.status || "").toLowerCase() !== "approved")
-//       out.push("KYC approval");
-//     if (!user?.identityVerified) out.push("ID + live selfie");
-//     if (!user?.phoneVerified) out.push("Mobile verification");
-//     if (!user?.paymentDetails?.verified) out.push("Payout method");
-//     return out;
-//   }, [user]);
-
-//   const canSubmit =
-//     !uploading &&
-//     !!token &&
-//     form.title.trim() &&
-//     form.price &&
-//     form.maxGuests &&
-//     form.division &&
-//     form.district &&
-//     form.roomType &&
-//     form.location &&
-//     images.length > 0 &&
-//     missingFlags.length === 0;
-
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     if (!token) {
-//       toast.info("Please log in first.");
-//       navigate("/login");
-//       return;
-//     }
-//     if (!form.location)
-//       return toast.warn("Please select a location on the map.");
-//     if (!form.division || !form.district)
-//       return toast.warn("Please select Division and District.");
-//     if (images.length === 0)
-//       return toast.warn("Please add at least one image.");
-//     if (missingFlags.length > 0) {
-//       toast.error(`Complete account setup: ${missingFlags.join(", ")}`);
-//       return;
-//     }
-
-//     try {
-//       setUploading(true);
-//       const fd = new FormData();
-//       images.forEach((img) => fd.append("images", img));
-//       Object.entries({
-//         title: form.title.trim(),
-//         price: form.price,
-//         maxGuests: form.maxGuests,
-//         division: form.division,
-//         district: form.district,
-//         roomType: form.roomType,
-//         description: form.description || "",
-//         houseRules: form.houseRules || "",
-//         location: JSON.stringify(form.location),
-//       }).forEach(([k, v]) => fd.append(k, v));
-
-//       await api.post("/api/listings", fd, {
-//         headers: { "Content-Type": "multipart/form-data" },
-//       });
-
-//       toast.success("✅ Listing created!");
-//       navigate("/host/dashboard");
-//     } catch (err) {
-//       const msg = err?.response?.data?.message || "Failed to create listing.";
-//       toast.error(`❌ ${msg}`);
-//       // Smart redirects by server message
-//       const m = msg.toLowerCase();
-//       if (m.includes("host")) navigate("/profile?tab=roles");
-//       else if (m.includes("kyc")) navigate("/kyc");
-//       else if (m.includes("upload id")) navigate("/verify-identity");
-//       else if (m.includes("mobile") || m.includes("verify your mobile"))
-//         navigate("/verify-phone");
-//       else if (m.includes("payout")) navigate("/payout-setup");
-//       console.error(err);
-//     } finally {
-//       setUploading(false);
-//     }
-//   };
-
-//   return (
-//     <form
-//       onSubmit={handleSubmit}
-//       encType="multipart/form-data"
-//       className="max-w-3xl mx-auto p-4 bg-white shadow rounded space-y-4"
-//     >
-//       <h2 className="text-2xl font-bold text-center">🏠 Create New Listing</h2>
-
-//       {/* Host readiness banner */}
-//       {user && (
-//         <div className="text-sm rounded border p-3">
-//           <div className="font-medium mb-1">Account status</div>
-//           <ul className="list-disc ml-5 space-y-1">
-//             <li
-//               className={
-//                 user?.kyc?.status === "approved"
-//                   ? "text-green-700"
-//                   : "text-red-700"
-//               }
-//             >
-//               KYC: {user?.kyc?.status || "unknown"}{" "}
-//               {user?.kyc?.status !== "approved" && (
-//                 <Link to="/kyc" className="text-blue-600 underline ml-1">
-//                   Fix
-//                 </Link>
-//               )}
-//             </li>
-//             <li
-//               className={
-//                 user?.identityVerified ? "text-green-700" : "text-red-700"
-//               }
-//             >
-//               Identity: {user?.identityVerified ? "verified" : "not verified"}{" "}
-//               {!user?.identityVerified && (
-//                 <Link
-//                   to="/verify-identity"
-//                   className="text-blue-600 underline ml-1"
-//                 >
-//                   Verify
-//                 </Link>
-//               )}
-//             </li>
-//             <li
-//               className={
-//                 user?.phoneVerified ? "text-green-700" : "text-red-700"
-//               }
-//             >
-//               Mobile: {user?.phoneVerified ? "verified" : "not verified"}{" "}
-//               {!user?.phoneVerified && (
-//                 <Link
-//                   to="/verify-phone"
-//                   className="text-blue-600 underline ml-1"
-//                 >
-//                   Verify
-//                 </Link>
-//               )}
-//             </li>
-//             <li
-//               className={
-//                 user?.paymentDetails?.verified
-//                   ? "text-green-700"
-//                   : "text-red-700"
-//               }
-//             >
-//               Payout:{" "}
-//               {user?.paymentDetails?.verified ? "verified" : "not verified"}{" "}
-//               {!user?.paymentDetails?.verified && (
-//                 <Link
-//                   to="/payment-details"
-//                   className="text-blue-600 underline ml-1"
-//                 >
-//                   Add
-//                 </Link>
-//               )}
-//             </li>
-//           </ul>
-//           {missingFlags.length > 0 && (
-//             <div className="text-red-700 mt-2">
-//               🔒 You can’t publish yet. Missing: {missingFlags.join(", ")}.
-//             </div>
-//           )}
-//         </div>
-//       )}
-
-//       <input
-//         name="title"
-//         placeholder="Listing Title"
-//         value={form.title}
-//         onChange={handleChange}
-//         className="w-full p-2 border rounded"
-//         required
-//       />
-
-//       {/* Division & District */}
-//       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-//         <select
-//           name="division"
-//           onChange={handleChange}
-//           value={form.division}
-//           className="w-full p-2 border rounded"
-//           required
-//         >
-//           <option value="">Select Division</option>
-//           {Object.keys(divisions).map((div) => (
-//             <option key={div} value={div}>
-//               {div}
-//             </option>
-//           ))}
-//         </select>
-
-//         <select
-//           name="district"
-//           onChange={handleChange}
-//           value={form.district}
-//           className="w-full p-2 border rounded"
-//           required
-//         >
-//           <option value="">Select District</option>
-//           {(divisions[form.division] || []).map((d) => (
-//             <option key={d} value={d}>
-//               {d}
-//             </option>
-//           ))}
-//         </select>
-//       </div>
-
-//       {/* Room Type */}
-//       <select
-//         name="roomType"
-//         value={form.roomType}
-//         onChange={handleChange}
-//         className="w-full p-2 border rounded"
-//         required
-//       >
-//         <option value="">Select Room Type</option>
-//         <option value="Hotel">Hotel</option>
-//         <option value="Resort">Resort</option>
-//         <option value="Guest House">Guest House</option>
-//         <option value="Personal Property">Personal Property</option>
-//         <option value="Other">Other</option>
-//       </select>
-
-//       <textarea
-//         name="description"
-//         placeholder="e.g. A cozy cottage near the tea gardens of Sylhet with free breakfast and Wi-Fi."
-//         value={form.description}
-//         onChange={handleChange}
-//         className="w-full p-2 border rounded"
-//         rows={4}
-//       />
-
-//       <textarea
-//         name="houseRules"
-//         placeholder="e.g. No smoking, Check-out by 11am, No loud music after 10pm"
-//         value={form.houseRules}
-//         onChange={handleChange}
-//         className="w-full p-2 border rounded"
-//         rows={3}
-//       />
-
-//       {/* Price, Guests, Auto Detect */}
-//       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-//         <input
-//           name="price"
-//           type="number"
-//           placeholder="Price per night (BDT)"
-//           value={form.price}
-//           onChange={handleChange}
-//           className="w-full p-2 border rounded"
-//           min={1}
-//           required
-//         />
-//         <input
-//           name="maxGuests"
-//           type="number"
-//           placeholder="Max Guests"
-//           value={form.maxGuests}
-//           onChange={handleChange}
-//           className="w-full p-2 border rounded"
-//           min={1}
-//           required
-//         />
-//         <button
-//           type="button"
-//           onClick={handleAutoDetect}
-//           className="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2"
-//           disabled={revgeoBusy}
-//         >
-//           {revgeoBusy ? "📍 Detecting…" : "📍 Auto-detect Location"}
-//         </button>
-//       </div>
-
-//       <label className="block font-medium mt-4 mb-1">🗺 Select on Map</label>
-//       <MapboxAutocomplete
-//         onSelectLocation={handleMapSelect}
-//         formLocation={form.location}
-//       />
-//       {form.location?.address && (
-//         <p className="text-sm text-gray-600 mt-1">
-//           📌 Selected Location: {form.location.address}
-//         </p>
-//       )}
-
-//       {/* Upload Images */}
-//       <div>
-//         <input
-//           name="images"
-//           type="file"
-//           accept={ALLOWED_TYPES.join(",")}
-//           multiple
-//           onChange={(e) => onPickImages(e.target.files)}
-//           className="w-full mt-2"
-//           required
-//         />
-//         <p className="text-xs text-gray-500 mt-1">
-//           Up to {MAX_IMAGES} images. JPG/PNG/WebP/AVIF, max {MAX_IMAGE_MB}MB
-//           each.
-//         </p>
-//       </div>
-
-//       {previews.length > 0 && (
-//         <div className="flex gap-2 flex-wrap mt-2">
-//           {previews.map((src, i) => (
-//             <div key={i} className="relative">
-//               <img
-//                 src={src}
-//                 className="w-20 h-20 object-cover rounded border"
-//                 alt="Preview"
-//               />
-//               <button
-//                 type="button"
-//                 onClick={() => removeImage(i)}
-//                 className="absolute -top-2 -right-2 bg-black/70 text-white rounded-full w-6 h-6 leading-6 text-center"
-//                 aria-label="Remove"
-//               >
-//                 ×
-//               </button>
-//             </div>
-//           ))}
-//         </div>
-//       )}
-
-//       {uploading && (
-//         <p className="text-sm text-blue-600">
-//           Uploading… Don’t close this tab.
-//         </p>
-//       )}
-
-//       <button
-//         type="submit"
-//         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded w-full disabled:opacity-60"
-//         disabled={!canSubmit}
-//         title={
-//           !canSubmit ? "Complete form & account checks to enable" : undefined
-//         }
-//       >
-//         {uploading ? "Uploading…" : "✅ Submit Listing"}
-//       </button>
-//     </form>
-//   );
-// };
-
-// export default CreateListingPage;
-
-// src/pages/CreateListingPage.jsx
 import React, {
   useCallback,
   useEffect,
@@ -520,6 +5,23 @@ import React, {
   useRef,
   useState,
 } from "react";
+import {
+  BadgeCheck,
+  Building2,
+  Camera,
+  CheckCircle2,
+  Coins,
+  ImagePlus,
+  Info,
+  LocateFixed,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  UploadCloud,
+  Users,
+  X,
+} from "lucide-react";
+
 import { Link, useNavigate } from "react-router-dom";
 import MapboxAutocomplete from "../components/MapboxAutocomplete";
 import { divisions } from "../data/districts";
@@ -589,7 +91,7 @@ export default function CreateListingPage() {
       const res = await fetch(
         `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?types=place,region&access_token=${
           import.meta.env.VITE_MAPBOX_TOKEN
-        }`
+        }`,
       );
       if (!res.ok) throw new Error(`Mapbox ${res.status}`);
       const data = await res.json();
@@ -627,7 +129,7 @@ export default function CreateListingPage() {
           const res = await fetch(
             `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${
               import.meta.env.VITE_MAPBOX_TOKEN
-            }`
+            }`,
           );
           const data = await res.json();
           const address = data?.features?.[0]?.place_name || "";
@@ -639,7 +141,7 @@ export default function CreateListingPage() {
           extractAdminFromMapbox(lon, lat);
         }
       },
-      () => toast.error("Failed to get current location.")
+      () => toast.error("Failed to get current location."),
     );
   };
 
@@ -650,11 +152,11 @@ export default function CreateListingPage() {
       return toast.warn(`Max ${MAX_IMAGES} images allowed.`);
     const bad = arr.find(
       (f) =>
-        !ALLOWED_TYPES.includes(f.type) || f.size > MAX_IMAGE_MB * 1024 * 1024
+        !ALLOWED_TYPES.includes(f.type) || f.size > MAX_IMAGE_MB * 1024 * 1024,
     );
     if (bad)
       return toast.error(
-        `Only JPG/PNG/WebP/AVIF up to ${MAX_IMAGE_MB}MB each are allowed.`
+        `Only JPG/PNG/WebP/AVIF up to ${MAX_IMAGE_MB}MB each are allowed.`,
       );
     setImages((prev) => [...prev, ...arr]);
     setPreviews((prev) => [...prev, ...arr.map((f) => URL.createObjectURL(f))]);
@@ -687,7 +189,7 @@ export default function CreateListingPage() {
   // ✅ Consider either verified flag OR approved status
   const payoutVerified = Boolean(
     user?.paymentDetails?.verified ||
-      (user?.paymentDetails?.status || "").toLowerCase() === "approved"
+    (user?.paymentDetails?.status || "").toLowerCase() === "approved",
   );
 
   const missingFlags = useMemo(() => {
@@ -768,256 +270,628 @@ export default function CreateListingPage() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      encType="multipart/form-data"
-      className="max-w-3xl mx-auto p-4 bg-white shadow rounded space-y-4"
-    >
-      <h2 className="text-2xl font-bold text-center">🏠 Create New Listing</h2>
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 via-white to-white">
+      <form onSubmit={handleSubmit} encType="multipart/form-data">
+        <div className="max-w-6xl mx-auto px-4 py-10">
+          {/* Hero */}
+          <div className="relative overflow-hidden rounded-3xl border border-teal-100 bg-white shadow-sm">
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-600/10 via-cyan-500/10 to-emerald-500/10" />
+            <div className="relative p-7 md:p-10">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">
+                    <ShieldCheck size={16} />
+                    Host Publishing
+                  </div>
 
-      {user && (
-        <div className="text-sm rounded border p-3">
-          <div className="font-medium mb-1">Account status</div>
-          <ul className="list-disc ml-5 space-y-1">
-            <li
-              className={
-                user?.kyc?.status === "approved"
-                  ? "text-green-700"
-                  : "text-red-700"
-              }
-            >
-              KYC: {user?.kyc?.status || "unknown"}{" "}
-              {user?.kyc?.status !== "approved" && (
-                <Link to="/kyc" className="text-blue-600 underline ml-1">
-                  Fix
-                </Link>
-              )}
-            </li>
-            <li
-              className={
-                user?.identityVerified ? "text-green-700" : "text-red-700"
-              }
-            >
-              Identity: {user?.identityVerified ? "verified" : "not verified"}{" "}
-              {!user?.identityVerified && (
-                <Link
-                  to="/verify-identity"
-                  className="text-blue-600 underline ml-1"
-                >
-                  Verify
-                </Link>
-              )}
-            </li>
-            <li
-              className={
-                user?.phoneVerified ? "text-green-700" : "text-red-700"
-              }
-            >
-              Mobile: {user?.phoneVerified ? "verified" : "not verified"}{" "}
-              {!user?.phoneVerified && (
-                <Link
-                  to="/verify-phone"
-                  className="text-blue-600 underline ml-1"
-                >
-                  Verify
-                </Link>
-              )}
-            </li>
-            <li className={payoutVerified ? "text-green-700" : "text-red-700"}>
-              Payout: {payoutVerified ? "verified" : "not verified"}{" "}
-              {!payoutVerified && (
-                <Link
-                  to="/payment-details"
-                  className="text-blue-600 underline ml-1"
-                >
-                  Add
-                </Link>
-              )}
-            </li>
-          </ul>
-          {missingFlags.length > 0 && (
-            <div className="text-red-700 mt-2">
-              🔒 You can’t publish yet. Missing: {missingFlags.join(", ")}.
-              <button
-                onClick={refreshMe}
-                type="button"
-                className="ml-2 px-2 py-1 rounded bg-gray-100 hover:bg-gray-200"
-              >
-                Refresh
-              </button>
+                  <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+                    Create a New Listing
+                  </h1>
+
+                  <p className="mt-2 max-w-2xl text-gray-600">
+                    Add details, choose location, upload photos and publish when
+                    your account checks are complete.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-3 py-1 text-sm text-gray-700">
+                    <ImagePlus className="text-teal-600" size={16} />
+                    Up to {MAX_IMAGES} photos
+                  </div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-3 py-1 text-sm text-gray-700">
+                    <Coins className="text-teal-600" size={16} />
+                    Price per night (BDT)
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
-        </div>
-      )}
+          </div>
 
-      <input
-        name="title"
-        placeholder="Listing Title"
-        value={form.title}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-        required
-      />
+          {/* Main grid */}
+          <div className="mt-8 grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left: Form */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* Account Status */}
+              {user && (
+                <div className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-teal-600/5 to-cyan-500/5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <BadgeCheck className="text-teal-700" size={18} />
+                        <h2 className="text-lg font-semibold text-gray-900">
+                          Account readiness
+                        </h2>
+                      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <select
-          name="division"
-          onChange={handleChange}
-          value={form.division}
-          className="w-full p-2 border rounded"
-          required
-        >
-          <option value="">Select Division</option>
-          {Object.keys(divisions).map((div) => (
-            <option key={div} value={div}>
-              {div}
-            </option>
-          ))}
-        </select>
-        <select
-          name="district"
-          onChange={handleChange}
-          value={form.district}
-          className="w-full p-2 border rounded"
-          required
-        >
-          <option value="">Select District</option>
-          {(divisions[form.division] || []).map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
-      </div>
+                      <button
+                        onClick={refreshMe}
+                        type="button"
+                        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                      >
+                        Refresh
+                        <Info size={16} className="text-teal-600" />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-600">
+                      You can publish only when these checks are approved.
+                    </p>
+                  </div>
 
-      <select
-        name="roomType"
-        value={form.roomType}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-        required
-      >
-        <option value="">Select Room Type</option>
-        <option value="Hotel">Hotel</option>
-        <option value="Resort">Resort</option>
-        <option value="Guest House">Guest House</option>
-        <option value="Personal Property">Personal Property</option>
-        <option value="Other">Other</option>
-      </select>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* KYC */}
+                      <div className="rounded-2xl border border-gray-200 p-4 flex items-start gap-3">
+                        <div className="rounded-xl bg-teal-50 p-3 border border-teal-100">
+                          <ShieldCheck className="text-teal-700" size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-gray-900">KYC</p>
+                            <span
+                              className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                (user?.kyc?.status || "").toLowerCase() ===
+                                "approved"
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-rose-50 text-rose-700 border border-rose-200"
+                              }`}
+                            >
+                              {user?.kyc?.status || "unknown"}
+                            </span>
+                          </div>
+                          {(user?.kyc?.status || "").toLowerCase() !==
+                            "approved" && (
+                            <Link
+                              to="/kyc"
+                              className="text-sm text-teal-700 underline font-medium"
+                            >
+                              Fix KYC
+                            </Link>
+                          )}
+                        </div>
+                      </div>
 
-      <textarea
-        name="description"
-        placeholder="e.g. A cozy cottage…"
-        value={form.description}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-        rows={4}
-      />
-      <textarea
-        name="houseRules"
-        placeholder="e.g. No smoking…"
-        value={form.houseRules}
-        onChange={handleChange}
-        className="w-full p-2 border rounded"
-        rows={3}
-      />
+                      {/* Identity */}
+                      <div className="rounded-2xl border border-gray-200 p-4 flex items-start gap-3">
+                        <div className="rounded-xl bg-teal-50 p-3 border border-teal-100">
+                          <Camera className="text-teal-700" size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-gray-900">
+                              Identity
+                            </p>
+                            <span
+                              className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                user?.identityVerified
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-rose-50 text-rose-700 border border-rose-200"
+                              }`}
+                            >
+                              {user?.identityVerified
+                                ? "verified"
+                                : "not verified"}
+                            </span>
+                          </div>
+                          {!user?.identityVerified && (
+                            <Link
+                              to="/verify-identity"
+                              className="text-sm text-teal-700 underline font-medium"
+                            >
+                              Verify identity
+                            </Link>
+                          )}
+                        </div>
+                      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input
-          name="price"
-          type="number"
-          placeholder="Price per night (BDT)"
-          value={form.price}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          min={1}
-          required
-        />
-        <input
-          name="maxGuests"
-          type="number"
-          placeholder="Max Guests"
-          value={form.maxGuests}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          min={1}
-          required
-        />
-        <button
-          type="button"
-          onClick={handleAutoDetect}
-          className="bg-green-600 hover:bg-green-700 text-white rounded px-4 py-2"
-          disabled={revgeoBusy}
-        >
-          {revgeoBusy ? "📍 Detecting…" : "📍 Auto-detect Location"}
-        </button>
-      </div>
+                      {/* Phone */}
+                      <div className="rounded-2xl border border-gray-200 p-4 flex items-start gap-3">
+                        <div className="rounded-xl bg-teal-50 p-3 border border-teal-100">
+                          <Phone className="text-teal-700" size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-gray-900">
+                              Mobile
+                            </p>
+                            <span
+                              className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                user?.phoneVerified
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-rose-50 text-rose-700 border border-rose-200"
+                              }`}
+                            >
+                              {user?.phoneVerified
+                                ? "verified"
+                                : "not verified"}
+                            </span>
+                          </div>
+                          {!user?.phoneVerified && (
+                            <Link
+                              to="/verify-phone"
+                              className="text-sm text-teal-700 underline font-medium"
+                            >
+                              Verify phone
+                            </Link>
+                          )}
+                        </div>
+                      </div>
 
-      <label className="block font-medium mt-4 mb-1">🗺 Select on Map</label>
-      <MapboxAutocomplete
-        onSelectLocation={handleMapSelect}
-        formLocation={form.location}
-      />
-      {form.location?.address && (
-        <p className="text-sm text-gray-600 mt-1">
-          📌 Selected Location: {form.location.address}
-        </p>
-      )}
+                      {/* Payout */}
+                      <div className="rounded-2xl border border-gray-200 p-4 flex items-start gap-3">
+                        <div className="rounded-xl bg-teal-50 p-3 border border-teal-100">
+                          <Coins className="text-teal-700" size={18} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="font-semibold text-gray-900">
+                              Payout
+                            </p>
+                            <span
+                              className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                payoutVerified
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                  : "bg-rose-50 text-rose-700 border border-rose-200"
+                              }`}
+                            >
+                              {payoutVerified ? "verified" : "not verified"}
+                            </span>
+                          </div>
+                          {!payoutVerified && (
+                            <Link
+                              to="/payment-details"
+                              className="text-sm text-teal-700 underline font-medium"
+                            >
+                              Add payout method
+                            </Link>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-      <div>
-        <input
-          name="images"
-          type="file"
-          accept={ALLOWED_TYPES.join(",")}
-          multiple
-          onChange={(e) => onPickImages(e.target.files)}
-          className="w-full mt-2"
-          required
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          Up to {MAX_IMAGES} images. JPG/PNG/WebP/AVIF, max {MAX_IMAGE_MB}MB
-          each.
-        </p>
-      </div>
+                    {missingFlags.length > 0 && (
+                      <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-800">
+                        <div className="font-semibold">
+                          You can’t publish yet
+                        </div>
+                        <div className="text-sm mt-1">
+                          Missing: {missingFlags.join(", ")}.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-      {previews.length > 0 && (
-        <div className="flex gap-2 flex-wrap mt-2">
-          {previews.map((src, i) => (
-            <div key={i} className="relative">
-              <img
-                src={src}
-                className="w-20 h-20 object-cover rounded border"
-                alt="Preview"
-              />
-              <button
-                type="button"
-                onClick={() => removeImage(i)}
-                className="absolute -top-2 -right-2 bg-black/70 text-white rounded-full w-6 h-6 leading-6 text-center"
-                aria-label="Remove"
-              >
-                ×
-              </button>
+              {/* Listing Basics */}
+              <div className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Listing details
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Title, category, and location region.
+                  </p>
+                </div>
+
+                <div className="p-6 space-y-5">
+                  {/* Title */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">
+                      Title
+                    </label>
+                    <input
+                      name="title"
+                      placeholder="e.g. Cozy beach resort with sea view"
+                      value={form.title}
+                      onChange={handleChange}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                      required
+                    />
+                  </div>
+
+                  {/* Division / District */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        Division
+                      </label>
+                      <div className="relative">
+                        <select
+                          name="division"
+                          onChange={handleChange}
+                          value={form.division}
+                          className="w-full appearance-none rounded-xl border border-gray-200 px-4 py-3 pr-10 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                          required
+                        >
+                          <option value="">Select Division</option>
+                          {Object.keys(divisions).map((div) => (
+                            <option key={div} value={div}>
+                              {div}
+                            </option>
+                          ))}
+                        </select>
+                        <Building2
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-teal-600"
+                          size={18}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        District
+                      </label>
+                      <div className="relative">
+                        <select
+                          name="district"
+                          onChange={handleChange}
+                          value={form.district}
+                          className="w-full appearance-none rounded-xl border border-gray-200 px-4 py-3 pr-10 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                          required
+                        >
+                          <option value="">Select District</option>
+                          {(divisions[form.division] || []).map((d) => (
+                            <option key={d} value={d}>
+                              {d}
+                            </option>
+                          ))}
+                        </select>
+                        <MapPin
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-teal-600"
+                          size={18}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Room Type */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">
+                      Room Type
+                    </label>
+                    <select
+                      name="roomType"
+                      value={form.roomType}
+                      onChange={handleChange}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                      required
+                    >
+                      <option value="">Select Room Type</option>
+                      <option value="Hotel">Hotel</option>
+                      <option value="Resort">Resort</option>
+                      <option value="Guest House">Guest House</option>
+                      <option value="Personal Property">
+                        Personal Property
+                      </option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Description / Rules */}
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        name="description"
+                        placeholder="Describe your place, highlights, nearby attractions…"
+                        value={form.description}
+                        onChange={handleChange}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 resize-none"
+                        rows={4}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        House Rules
+                      </label>
+                      <textarea
+                        name="houseRules"
+                        placeholder="e.g. No smoking, no parties, check-in after 2 PM…"
+                        value={form.houseRules}
+                        onChange={handleChange}
+                        className="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100 resize-none"
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Price / Guests / Autodetect */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        Price (BDT / night)
+                      </label>
+                      <div className="relative">
+                        <input
+                          name="price"
+                          type="number"
+                          placeholder="e.g. 3500"
+                          value={form.price}
+                          onChange={handleChange}
+                          className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-10 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                          min={1}
+                          required
+                        />
+                        <Coins
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-teal-600"
+                          size={18}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-800 mb-1">
+                        Max Guests
+                      </label>
+                      <div className="relative">
+                        <input
+                          name="maxGuests"
+                          type="number"
+                          placeholder="e.g. 4"
+                          value={form.maxGuests}
+                          onChange={handleChange}
+                          className="w-full rounded-xl border border-gray-200 px-4 py-3 pr-10 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                          min={1}
+                          required
+                        />
+                        <Users
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-teal-600"
+                          size={18}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={handleAutoDetect}
+                        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-white font-semibold shadow-sm transition hover:bg-teal-700 disabled:opacity-60"
+                        disabled={revgeoBusy}
+                      >
+                        <LocateFixed size={18} />
+                        {revgeoBusy ? "Detecting…" : "Auto-detect"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Location */}
+              <div className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Location
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Search and select on the map to pinpoint the place.
+                  </p>
+                </div>
+
+                <div className="p-6">
+                  <MapboxAutocomplete
+                    onSelectLocation={handleMapSelect}
+                    formLocation={form.location}
+                  />
+
+                  {form.location?.address && (
+                    <div className="mt-3 rounded-2xl border border-teal-100 bg-teal-50 p-4 text-sm text-teal-900">
+                      <div className="flex items-start gap-2">
+                        <MapPin className="mt-0.5 text-teal-700" size={16} />
+                        <div>
+                          <div className="font-semibold">Selected address</div>
+                          <div className="text-teal-800">
+                            {form.location.address}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Photos */}
+              <div className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                <div className="px-6 py-5 border-b border-gray-100">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Photos
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    High-quality photos increase booking conversions.
+                  </p>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-white p-3 border border-gray-200">
+                          <UploadCloud className="text-teal-700" size={18} />
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-900">
+                            Upload images
+                          </div>
+                          <div className="text-sm text-gray-600">
+                            Up to {MAX_IMAGES} images • {MAX_IMAGE_MB}MB each •
+                            JPG/PNG/WebP/AVIF
+                          </div>
+                        </div>
+                      </div>
+
+                      <label className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3 text-white font-semibold hover:bg-teal-700 cursor-pointer">
+                        <ImagePlus size={18} />
+                        Choose files
+                        <input
+                          name="images"
+                          type="file"
+                          accept={ALLOWED_TYPES.join(",")}
+                          multiple
+                          onChange={(e) => onPickImages(e.target.files)}
+                          className="hidden"
+                          required={images.length === 0}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  {previews.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {previews.map((src, i) => (
+                        <div
+                          key={i}
+                          className="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white"
+                        >
+                          <img
+                            src={src}
+                            className="h-28 w-full object-cover transition group-hover:scale-[1.02]"
+                            alt="Preview"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(i)}
+                            className="absolute top-2 right-2 inline-flex items-center justify-center rounded-full bg-black/70 text-white w-8 h-8 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition"
+                            aria-label="Remove"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {uploading && (
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                      Uploading… Don’t close this tab.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          ))}
+
+            {/* Right: Sticky submit card */}
+            <div className="lg:col-span-4">
+              <div className="lg:sticky lg:top-6 space-y-4">
+                <div className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                  <div className="px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-teal-600/5 to-cyan-500/5">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Publish
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Complete required fields to enable submit.
+                    </p>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Location selected</span>
+                        {form.location ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                            <CheckCircle2 size={16} /> Yes
+                          </span>
+                        ) : (
+                          <span className="text-rose-700 font-semibold">
+                            No
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Photos</span>
+                        <span className="font-semibold text-gray-900">
+                          {images.length}/{MAX_IMAGES}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-600">Account checks</span>
+                        {missingFlags.length === 0 ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold">
+                            <CheckCircle2 size={16} /> Ready
+                          </span>
+                        ) : (
+                          <span className="text-rose-700 font-semibold">
+                            {missingFlags.length} missing
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {missingFlags.length > 0 && (
+                      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                        <div className="font-semibold flex items-center gap-2">
+                          <Info size={16} className="text-amber-700" />
+                          Finish setup to publish
+                        </div>
+                        <div className="mt-1">{missingFlags.join(", ")}.</div>
+                      </div>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-teal-600 px-6 py-3 text-white font-semibold shadow-sm transition hover:bg-teal-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                      disabled={!canSubmit}
+                      title={
+                        !canSubmit
+                          ? "Complete form & account checks to enable"
+                          : undefined
+                      }
+                    >
+                      {uploading ? "Uploading…" : "Submit Listing"}
+                      <CheckCircle2 size={18} />
+                    </button>
+
+                    <p className="text-xs text-gray-500">
+                      By publishing, you confirm your listing details and photos
+                      are accurate.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Small helper card */}
+                <div className="rounded-3xl border border-teal-100 bg-teal-50 p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-xl bg-white p-3 border border-teal-100">
+                      <Info className="text-teal-700" size={18} />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-gray-900">Pro tip</div>
+                      <div className="text-sm text-gray-700 mt-1">
+                        Use bright daylight photos and mention nearby landmarks.
+                        It improves trust and bookings.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-
-      {uploading && (
-        <p className="text-sm text-blue-600">
-          Uploading… Don’t close this tab.
-        </p>
-      )}
-
-      <button
-        type="submit"
-        className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded w-full disabled:opacity-60"
-        disabled={!canSubmit}
-        title={
-          !canSubmit ? "Complete form & account checks to enable" : undefined
-        }
-      >
-        {uploading ? "Uploading…" : "✅ Submit Listing"}
-      </button>
-    </form>
+      </form>
+    </div>
   );
 }

@@ -1,7 +1,7 @@
-// TripSearchPage.jsx (Updated with Seat Selection + Ride Reservation)
-import React, { useEffect, useRef, useState } from "react";
+// TripSearchPage.jsx (Premium + Production-ready Map: persistent map instance, markers refresh, bounds fit, empty state)
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import RideResults from "../components/RideResults";
 import mapboxgl from "mapbox-gl";
 import { toast } from "react-toastify";
@@ -12,31 +12,39 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 const TripSearchPage = () => {
   const [trips, setTrips] = useState([]);
   const [filteredTrips, setFilteredTrips] = useState([]);
-  const [searchParams] = useSearchParams();
+  const [searchParams] = useSearchParams(); // kept (you may use later for from/to/date)
+  const navigate = useNavigate();
+
   const [vehicleType, setVehicleType] = useState(
-    localStorage.getItem("vehicleType") || ""
+    localStorage.getItem("vehicleType") || "",
   );
   const [minPrice, setMinPrice] = useState(
-    localStorage.getItem("minPrice") || ""
+    localStorage.getItem("minPrice") || "",
   );
   const [maxPrice, setMaxPrice] = useState(
-    localStorage.getItem("maxPrice") || ""
+    localStorage.getItem("maxPrice") || "",
   );
   const [sortOption, setSortOption] = useState(
-    localStorage.getItem("sortOption") || "date"
+    localStorage.getItem("sortOption") || "date",
   );
+
   const [showMap, setShowMap] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
-  const mapRef = useRef(null);
 
+  // Map refs
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
+
+  // Fetch trips once
   useEffect(() => {
     const fetchTrips = async () => {
       try {
         const res = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/trips`
+          `${import.meta.env.VITE_API_URL}/api/trips`,
         );
-        setTrips(res.data);
+        setTrips(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         console.error("❌ Failed to fetch trips", err);
       }
@@ -44,50 +52,120 @@ const TripSearchPage = () => {
     fetchTrips();
   }, []);
 
+  // Apply filters + sort
   useEffect(() => {
     let results = [...trips];
+
     if (vehicleType)
       results = results.filter((trip) => trip.vehicleType === vehicleType);
-    if (minPrice)
-      results = results.filter(
-        (trip) => trip.farePerSeat >= parseFloat(minPrice)
-      );
-    if (maxPrice)
-      results = results.filter(
-        (trip) => trip.farePerSeat <= parseFloat(maxPrice)
-      );
-    if (sortOption === "price")
-      results.sort((a, b) => a.farePerSeat - b.farePerSeat);
-    else results.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    if (minPrice) {
+      const min = parseFloat(minPrice);
+      if (!Number.isNaN(min))
+        results = results.filter((trip) => trip.farePerSeat >= min);
+    }
+
+    if (maxPrice) {
+      const max = parseFloat(maxPrice);
+      if (!Number.isNaN(max))
+        results = results.filter((trip) => trip.farePerSeat <= max);
+    }
+
+    if (sortOption === "price") {
+      results.sort((a, b) => (a.farePerSeat || 0) - (b.farePerSeat || 0));
+    } else {
+      results.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
 
     setFilteredTrips(results);
     setCurrentPage(1);
   }, [trips, vehicleType, minPrice, maxPrice, sortOption]);
 
+  // Pagination
+  const paginatedTrips = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredTrips.slice(start, start + itemsPerPage);
+  }, [filteredTrips, currentPage]);
+
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(filteredTrips.length / itemsPerPage));
+  }, [filteredTrips.length]);
+
+  // Create + update map when showMap/filteredTrips change
   useEffect(() => {
-    if (!showMap || !mapRef.current || !filteredTrips.length) return;
-    const map = new mapboxgl.Map({
-      container: mapRef.current,
-      style: "mapbox://styles/mapbox/streets-v11",
-      center: [90.4125, 23.8103],
-      zoom: 6,
-    });
+    if (!showMap || !mapRef.current) return;
+
+    // Create map only once
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new mapboxgl.Map({
+        container: mapRef.current,
+        style: "mapbox://styles/mapbox/streets-v11",
+        center: [90.4125, 23.8103],
+        zoom: 6,
+      });
+      mapInstanceRef.current.addControl(
+        new mapboxgl.NavigationControl(),
+        "top-right",
+      );
+    }
+
+    const map = mapInstanceRef.current;
+
+    // Remove old markers
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = [];
+
+    const bounds = new mapboxgl.LngLatBounds();
+    let hasAny = false;
+
     filteredTrips.forEach((trip) => {
-      if (trip.location?.coordinates?.length === 2) {
-        new mapboxgl.Marker()
-          .setLngLat(trip.location.coordinates)
-          .setPopup(new mapboxgl.Popup().setText(`${trip.from} → ${trip.to}`))
+      const c = trip.location?.coordinates;
+      if (Array.isArray(c) && c.length === 2) {
+        hasAny = true;
+        bounds.extend(c);
+
+        // Custom teal marker element (click => open trip)
+        const el = document.createElement("div");
+        el.style.width = "18px";
+        el.style.height = "18px";
+        el.style.borderRadius = "999px";
+        el.style.background = "#0f766e"; // teal-700
+        el.style.boxShadow = "0 10px 25px rgba(0,0,0,.18)";
+        el.style.border = "2px solid white";
+        el.style.cursor = "pointer";
+
+        el.addEventListener("click", () => navigate(`/trips/${trip._id}`));
+
+        const marker = new mapboxgl.Marker({ element: el })
+          .setLngLat(c)
+          .setPopup(
+            new mapboxgl.Popup({ offset: 20 }).setText(
+              `${trip.from} → ${trip.to}`,
+            ),
+          )
           .addTo(map);
+
+        markersRef.current.push(marker);
       }
     });
-    return () => map.remove();
-  }, [showMap, filteredTrips]);
 
-  const paginatedTrips = filteredTrips.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+    // Fit bounds to markers
+    if (hasAny) {
+      map.fitBounds(bounds, { padding: 60, maxZoom: 12, duration: 700 });
+    }
+  }, [showMap, filteredTrips, navigate]);
 
+  // Cleanup map on unmount
+  useEffect(() => {
+    return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      mapInstanceRef.current?.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // Reserve + pay
   const handleReserve = async (trip, seatCount) => {
     const token = localStorage.getItem("token");
     if (!token) return toast.error("You must be logged in to reserve a ride");
@@ -111,6 +189,7 @@ const TripSearchPage = () => {
     }
   };
 
+  // Cancel reservation
   const handleCancel = async (trip) => {
     const token = localStorage.getItem("token");
     if (!token) return toast.error("You must be logged in to cancel a ride");
@@ -119,16 +198,16 @@ const TripSearchPage = () => {
       const res = await axios.post(
         `${import.meta.env.VITE_API_URL}/api/trips/${trip._id}/cancel`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       toast.success("❌ Reservation canceled successfully!");
       setTrips((prev) =>
-        prev.map((t) => (t._id === trip._id ? res.data.trip : t))
+        prev.map((t) => (t._id === trip._id ? res.data.trip : t)),
       );
     } catch (err) {
       console.error("❌ Ride cancellation failed", err);
       toast.error(
-        err?.response?.data?.message || "Failed to cancel reservation"
+        err?.response?.data?.message || "Failed to cancel reservation",
       );
     }
   };
@@ -138,6 +217,7 @@ const TripSearchPage = () => {
     setMinPrice("");
     setMaxPrice("");
     setSortOption("date");
+
     localStorage.removeItem("vehicleType");
     localStorage.removeItem("minPrice");
     localStorage.removeItem("maxPrice");
@@ -156,7 +236,6 @@ const TripSearchPage = () => {
         {/* FILTERS */}
         <aside className="md:col-span-1">
           <div className="sticky top-24 rounded-3xl bg-white ring-1 ring-slate-200/80 shadow-sm overflow-hidden">
-            {/* header */}
             <div className="px-5 pt-5 pb-4 border-b border-slate-100">
               <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 via-emerald-500 to-sky-500 text-white shadow-sm">
@@ -169,7 +248,6 @@ const TripSearchPage = () => {
               </p>
             </div>
 
-            {/* body */}
             <div className="px-5 py-5 space-y-4">
               {/* Vehicle type */}
               <div className="space-y-1.5">
@@ -182,11 +260,7 @@ const TripSearchPage = () => {
                     setVehicleType(e.target.value);
                     localStorage.setItem("vehicleType", e.target.value);
                   }}
-                  className="
-                w-full h-11 rounded-2xl bg-white
-                ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
-                outline-none focus:ring-2 focus:ring-teal-300/60
-              "
+                  className="w-full h-11 rounded-2xl bg-white ring-1 ring-slate-200/80 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-teal-300/60"
                 >
                   <option value="">All Vehicle Types</option>
                   <option value="car">🚗 Car</option>
@@ -211,12 +285,7 @@ const TripSearchPage = () => {
                         setMinPrice(e.target.value);
                         localStorage.setItem("minPrice", e.target.value);
                       }}
-                      className="
-                    w-full h-11 rounded-2xl bg-white
-                    ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
-                    outline-none focus:ring-2 focus:ring-teal-300/60
-                    placeholder:text-slate-400
-                  "
+                      className="w-full h-11 rounded-2xl bg-white ring-1 ring-slate-200/80 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-teal-300/60 placeholder:text-slate-400"
                     />
                   </div>
 
@@ -230,12 +299,7 @@ const TripSearchPage = () => {
                         setMaxPrice(e.target.value);
                         localStorage.setItem("maxPrice", e.target.value);
                       }}
-                      className="
-                    w-full h-11 rounded-2xl bg-white
-                    ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
-                    outline-none focus:ring-2 focus:ring-teal-300/60
-                    placeholder:text-slate-400
-                  "
+                      className="w-full h-11 rounded-2xl bg-white ring-1 ring-slate-200/80 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-teal-300/60 placeholder:text-slate-400"
                     />
                   </div>
                 </div>
@@ -252,11 +316,7 @@ const TripSearchPage = () => {
                     setSortOption(e.target.value);
                     localStorage.setItem("sortOption", e.target.value);
                   }}
-                  className="
-                w-full h-11 rounded-2xl bg-white
-                ring-1 ring-slate-200/80 px-3 text-sm text-slate-800
-                outline-none focus:ring-2 focus:ring-teal-300/60
-              "
+                  className="w-full h-11 rounded-2xl bg-white ring-1 ring-slate-200/80 px-3 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-teal-300/60"
                 >
                   <option value="date">Sort by Date</option>
                   <option value="price">Sort by Price</option>
@@ -266,11 +326,7 @@ const TripSearchPage = () => {
               {/* Reset */}
               <button
                 onClick={resetFilters}
-                className="
-              w-full rounded-2xl bg-white ring-1 ring-slate-200/80
-              py-2.5 text-sm font-semibold text-slate-700
-              hover:bg-slate-50 hover:shadow-sm transition
-            "
+                className="w-full rounded-2xl bg-white ring-1 ring-slate-200/80 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:shadow-sm transition"
               >
                 🔄 Reset Filters
               </button>
@@ -301,10 +357,10 @@ const TripSearchPage = () => {
             <div className="relative inline-flex items-center rounded-full bg-white ring-1 ring-slate-200/80 shadow-sm p-1">
               <div
                 className={`
-              absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-teal-600
-              transition-transform duration-300 ease-out
-              ${showMap ? "translate-x-full" : "translate-x-0"}
-            `}
+                  absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-teal-600
+                  transition-transform duration-300 ease-out
+                  ${showMap ? "translate-x-full" : "translate-x-0"}
+                `}
               />
 
               <button
@@ -342,6 +398,24 @@ const TripSearchPage = () => {
               </div>
               <div ref={mapRef} className="w-full h-96" />
             </div>
+          ) : paginatedTrips.length === 0 ? (
+            <div className="rounded-3xl bg-white ring-1 ring-slate-200/80 shadow-sm p-10 text-center">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-teal-50 ring-1 ring-teal-100 flex items-center justify-center">
+                🔍
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-slate-900">
+                No rides match your filters
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Try changing vehicle type, price range, or sorting.
+              </p>
+              <button
+                onClick={resetFilters}
+                className="mt-5 rounded-2xl bg-teal-600 px-5 py-2.5 text-white font-semibold hover:bg-teal-700"
+              >
+                Reset Filters
+              </button>
+            </div>
           ) : (
             <RideResults
               trips={paginatedTrips}
@@ -356,13 +430,7 @@ const TripSearchPage = () => {
               <button
                 disabled={currentPage === 1}
                 onClick={() => setCurrentPage((p) => p - 1)}
-                className="
-              rounded-full px-4 py-2 text-sm font-semibold
-              bg-white text-teal-700 ring-1 ring-teal-200 shadow-sm
-              hover:bg-teal-50 active:scale-[0.99]
-              disabled:opacity-50 disabled:ring-slate-200 disabled:text-slate-500 disabled:hover:bg-white
-              transition
-            "
+                className="rounded-full px-4 py-2 text-sm font-semibold bg-white text-teal-700 ring-1 ring-teal-200 shadow-sm hover:bg-teal-50 active:scale-[0.99] disabled:opacity-50 disabled:ring-slate-200 disabled:text-slate-500 disabled:hover:bg-white transition"
               >
                 ◀ Previous
               </button>
@@ -374,20 +442,14 @@ const TripSearchPage = () => {
                 </span>{" "}
                 of{" "}
                 <span className="font-semibold text-slate-900">
-                  {Math.max(1, Math.ceil(filteredTrips.length / itemsPerPage))}
+                  {totalPages}
                 </span>
               </span>
 
               <button
-                disabled={currentPage * itemsPerPage >= filteredTrips.length}
+                disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => p + 1)}
-                className="
-              rounded-full px-4 py-2 text-sm font-semibold
-              bg-teal-600 text-white shadow-sm
-              hover:bg-teal-700 active:scale-[0.99]
-              disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200
-              transition
-            "
+                className="rounded-full px-4 py-2 text-sm font-semibold bg-teal-600 text-white shadow-sm hover:bg-teal-700 active:scale-[0.99] disabled:opacity-50 disabled:bg-slate-200 disabled:text-slate-500 disabled:hover:bg-slate-200 transition"
               >
                 Next ▶
               </button>

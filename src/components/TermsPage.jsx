@@ -1,4 +1,13 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
+import {
+  BookOpen,
+  CheckCircle2,
+  FileText,
+  Globe,
+  Info,
+  Search,
+  ShieldCheck,
+} from "lucide-react";
 
 const terms = [
   {
@@ -128,27 +137,239 @@ const terms = [
 ];
 
 export default function TermsPage() {
+  const [q, setQ] = useState("");
+  const [lang, setLang] = useState("both"); // en | bn | both
+  const [open, setOpen] = useState(() => new Set()); // expanded sections
+
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    if (!query) return terms;
+
+    return terms.filter((s) => {
+      const hay = [s.en, s.bn, ...s.details.flatMap(([en, bn]) => [en, bn])]
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(query);
+    });
+  }, [q]);
+
+  const toggleOpen = (idx) => {
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        📜 Terms & Conditions / শর্তাবলী
-      </h1>
-      <div className="space-y-8">
-        {terms.map((section, i) => (
-          <div key={i}>
-            <h2 className="text-xl font-semibold mb-2">
-              {section.en} / {section.bn}
-            </h2>
-            <ul className="list-disc pl-6 space-y-1 text-gray-700">
-              {section.details.map(([en, bn], j) => (
-                <li key={j}>
-                  <p className="font-medium">{en}</p>
-                  <p className="text-sm text-gray-600">{bn}</p>
-                </li>
-              ))}
-            </ul>
+    <div className="min-h-screen bg-gradient-to-b from-teal-50 via-white to-white">
+      <div className="max-w-6xl mx-auto px-4 py-10">
+        {/* Hero */}
+        <div className="relative overflow-hidden rounded-3xl border border-teal-100 bg-white shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-teal-600/10 via-cyan-500/10 to-emerald-500/10" />
+          <div className="relative p-7 md:p-10">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+              <div className="min-w-0">
+                <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-sm font-medium text-teal-700">
+                  <FileText size={16} />
+                  Terms & Conditions
+                </div>
+
+                <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+                  Terms & Conditions / শর্তাবলী
+                </h1>
+
+                <p className="mt-2 max-w-3xl text-gray-600">
+                  Please read these terms carefully. By using BanglaBnB, you
+                  agree to the rules below.
+                </p>
+
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-3 py-1 text-sm text-gray-700">
+                    <ShieldCheck size={16} className="text-teal-700" />
+                    Safety & trust
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-3 py-1 text-sm text-gray-700">
+                    <Globe size={16} className="text-teal-700" />
+                    Bangladesh
+                  </span>
+                  <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-3 py-1 text-sm text-gray-700">
+                    <BookOpen size={16} className="text-teal-700" />
+                    {terms.length} sections
+                  </span>
+                </div>
+              </div>
+
+              {/* Controls */}
+              <div className="w-full md:w-[420px] space-y-3">
+                <div className="relative">
+                  <Search
+                    size={18}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-teal-700"
+                  />
+                  <input
+                    value={q}
+                    onChange={(e) => setQ(e.target.value)}
+                    placeholder="Search terms (booking, refund, verification, data...)"
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-10 py-3 outline-none transition focus:border-teal-400 focus:ring-4 focus:ring-teal-100"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-white p-1">
+                  {[
+                    { key: "both", label: "EN + BN" },
+                    { key: "en", label: "English" },
+                    { key: "bn", label: "বাংলা" },
+                  ].map((o) => (
+                    <button
+                      key={o.key}
+                      type="button"
+                      onClick={() => setLang(o.key)}
+                      className={[
+                        "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition",
+                        lang === o.key
+                          ? "bg-teal-600 text-white"
+                          : "text-gray-700 hover:bg-gray-50",
+                      ].join(" ")}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 rounded-2xl border border-teal-100 bg-teal-50 p-4 text-sm text-teal-900">
+              <div className="flex items-start gap-2">
+                <Info size={16} className="mt-0.5 text-teal-700" />
+                <div>
+                  <span className="font-semibold">Note:</span> This is a general
+                  summary. For legal advice, consult a qualified professional.
+                </div>
+              </div>
+            </div>
           </div>
-        ))}
+        </div>
+
+        {/* Sections */}
+        <div className="mt-8 space-y-4">
+          {filtered.length === 0 ? (
+            <div className="rounded-3xl border border-gray-200 bg-white shadow-sm p-10 text-center">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center">
+                <Search className="text-teal-700" size={22} />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                No matching terms found
+              </h3>
+              <p className="mt-1 text-gray-600">
+                Try a different keyword (e.g., refund, booking, verification).
+              </p>
+            </div>
+          ) : (
+            filtered.map((section, idx) => {
+              const isOpen = open.has(idx);
+              return (
+                <div
+                  key={`${section.en}-${idx}`}
+                  className="rounded-3xl border border-gray-200 bg-white shadow-sm overflow-hidden"
+                >
+                  <button
+                    type="button"
+                    onClick={() => toggleOpen(idx)}
+                    className="w-full px-6 py-5 flex items-start justify-between gap-4 text-left hover:bg-gray-50"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-lg font-bold text-gray-900">
+                        {lang !== "bn" && <span>{section.en}</span>}
+                        {lang === "both" && (
+                          <span className="text-gray-400"> / </span>
+                        )}
+                        {lang !== "en" && (
+                          <span className="font-semibold">{section.bn}</span>
+                        )}
+                      </div>
+                      <div className="mt-1 text-sm text-gray-600">
+                        {section.details.length} point
+                        {section.details.length !== 1 ? "s" : ""}
+                      </div>
+                    </div>
+
+                    <div
+                      className={[
+                        "shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold",
+                        isOpen
+                          ? "bg-teal-50 text-teal-700 border-teal-200"
+                          : "bg-white text-gray-700 border-gray-200",
+                      ].join(" ")}
+                    >
+                      <CheckCircle2
+                        size={14}
+                        className={isOpen ? "text-teal-700" : "text-gray-500"}
+                      />
+                      {isOpen ? "Hide" : "View"}
+                    </div>
+                  </button>
+
+                  {isOpen && (
+                    <div className="px-6 pb-6">
+                      <ul className="space-y-3">
+                        {section.details.map(([en, bn], j) => (
+                          <li
+                            key={j}
+                            className="rounded-2xl border border-gray-200 bg-white p-4"
+                          >
+                            {lang !== "bn" && (
+                              <p className="font-semibold text-gray-900">
+                                {en}
+                              </p>
+                            )}
+                            {lang === "both" && <div className="h-2" />}
+                            {lang !== "en" && (
+                              <p className="text-sm text-gray-700">{bn}</p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Footer note */}
+        <div className="mt-10 rounded-3xl border border-teal-100 bg-teal-50 p-6">
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-white border border-teal-100 p-3">
+              <ShieldCheck className="text-teal-700" size={20} />
+            </div>
+            <div>
+              <div className="font-semibold text-gray-900">
+                Questions about these terms?
+              </div>
+              <div className="text-sm text-gray-700 mt-1">
+                Visit the Help Center or contact support for clarification.
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                <a
+                  href="/help"
+                  className="inline-flex items-center justify-center rounded-xl bg-teal-600 px-5 py-3 text-white font-semibold hover:bg-teal-700"
+                >
+                  Go to Help Center
+                </a>
+                <a
+                  href="/contact"
+                  className="inline-flex items-center justify-center rounded-xl border border-gray-200 bg-white px-5 py-3 font-semibold text-gray-800 hover:bg-gray-50"
+                >
+                  Contact Support
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
