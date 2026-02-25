@@ -5,6 +5,8 @@ import imageCompression from "browser-image-compression";
 import LocationAutocomplete from "../components/LocationAutocomplete";
 import MapboxRouteMap from "../components/MapboxRouteMap";
 import { fetchSuggestions } from "../utils/mapboxUtils";
+import { getErrorMessage } from "../utils/getErrorMessage";
+
 import {
   ArrowRight,
   Bike,
@@ -44,6 +46,9 @@ const DriverTripForm = () => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [message, setMessage] = useState("");
   const [step, setStep] = useState(1);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
   const navigate = useNavigate();
 
   // Auto GPS -> fill "From"
@@ -151,6 +156,9 @@ const DriverTripForm = () => {
     });
 
     try {
+      setError("");
+      setSuccess("");
+
       await axios.post(`${import.meta.env.VITE_API_URL}/api/trips`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -160,8 +168,9 @@ const DriverTripForm = () => {
       setMessage("✅ Trip created!");
       navigate("/dashboard/driver");
     } catch (err) {
-      console.error("❌ Trip creation failed", err);
-      setMessage("❌ Something went wrong.");
+      const msg = getErrorMessage(err, "❌ Trip creation failed");
+      console.error("❌ Trip creation failed:", err?.response?.data || err);
+      setError(msg);
     }
   };
 

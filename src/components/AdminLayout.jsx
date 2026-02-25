@@ -91,7 +91,7 @@ const AdminLayout = ({ children }) => {
       { to: "/admin/referrals", label: "Referrals", icon: "📢" },
       { to: "/admin/setting", label: "Settings", icon: "⚙️" },
     ],
-    []
+    [],
   );
 
   const isActive = (to) => pathname === to || pathname.startsWith(to + "/");

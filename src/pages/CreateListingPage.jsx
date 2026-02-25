@@ -187,10 +187,20 @@ export default function CreateListingPage() {
   }, [uploading, previews]);
 
   // ✅ Consider either verified flag OR approved status
-  const payoutVerified = Boolean(
-    user?.paymentDetails?.verified ||
-    (user?.paymentDetails?.status || "").toLowerCase() === "approved",
+  const payoutVerified = ["approved"].includes(
+    (user?.paymentDetails?.status || "").toLowerCase(),
   );
+
+  const payoutStatus = (
+    user?.paymentDetails?.status || "pending"
+  ).toLowerCase();
+
+  const payoutLabel =
+    payoutStatus === "approved"
+      ? "verified"
+      : payoutStatus === "rejected"
+        ? "rejected"
+        : "pending";
 
   const missingFlags = useMemo(() => {
     if (!user) return [];
@@ -449,20 +459,24 @@ export default function CreateListingPage() {
                             </p>
                             <span
                               className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                payoutVerified
+                                payoutStatus === "approved"
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                  : "bg-rose-50 text-rose-700 border border-rose-200"
+                                  : payoutStatus === "rejected"
+                                    ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                    : "bg-amber-50 text-amber-800 border border-amber-200"
                               }`}
                             >
-                              {payoutVerified ? "verified" : "not verified"}
+                              {payoutLabel}
                             </span>
                           </div>
-                          {!payoutVerified && (
+                          {payoutStatus !== "approved" && (
                             <Link
                               to="/payment-details"
                               className="text-sm text-teal-700 underline font-medium"
                             >
-                              Add payout method
+                              {payoutStatus === "rejected"
+                                ? "Fix payout method"
+                                : "Add payout method"}
                             </Link>
                           )}
                         </div>
