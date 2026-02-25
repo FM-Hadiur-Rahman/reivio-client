@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { logError } from "../utils/logError";
@@ -24,6 +24,17 @@ const LoginForm = () => {
 
   const navigate = useNavigate();
   const { updateUser, updateToken } = useAuth();
+
+  const saved = useMemo(() => {
+    try {
+      return {
+        token: localStorage.getItem("token"),
+        user: JSON.parse(localStorage.getItem("user")),
+      };
+    } catch {
+      return { token: null, user: null };
+    }
+  }, []);
 
   const goByRole = (role) => {
     navigate(
@@ -68,11 +79,10 @@ const LoginForm = () => {
         return;
       }
 
-      // ✅ store primaryRole and roles[] (plus legacy role)
       const updatedUser = {
         ...user,
         token: res.data.token,
-        role: user.primaryRole, // legacy compatibility
+        role: user.primaryRole, // legacy
         primaryRole: user.primaryRole,
         roles: Array.isArray(user.roles) ? user.roles : ["user"],
       };
@@ -81,11 +91,11 @@ const LoginForm = () => {
       if (remember) {
         localStorage.setItem("token", res.data.token);
         localStorage.setItem("user", JSON.stringify(updatedUser));
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("user");
       } else {
+        // session-only behavior
         sessionStorage.setItem("token", res.data.token);
         sessionStorage.setItem("user", JSON.stringify(updatedUser));
+        // also clear persistent storage
         localStorage.removeItem("token");
         localStorage.removeItem("user");
       }
@@ -111,6 +121,7 @@ const LoginForm = () => {
 
   // ✅ Auto redirect if already logged in (prevent flicker)
   useEffect(() => {
+    // support localStorage OR sessionStorage
     const token =
       localStorage.getItem("token") || sessionStorage.getItem("token");
     const userStr =
@@ -129,14 +140,8 @@ const LoginForm = () => {
   }, []);
 
   return (
-    <div className="relative min-h-[100vh] flex items-center justify-center px-4 py-10 bg-[radial-gradient(80%_80%_at_50%_10%,rgba(20,184,166,0.18),transparent_60%),radial-gradient(70%_70%_at_20%_80%,rgba(59,130,246,0.10),transparent_60%),linear-gradient(to_bottom,rgba(240,253,250,1),rgba(255,255,255,1))] overflow-hidden">
-      {/* Subtle animated blobs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-teal-200/25 blur-3xl animate-[floaty_9s_ease-in-out_infinite]" />
-        <div className="absolute -bottom-24 -left-24 h-72 w-72 rounded-full bg-blue-200/20 blur-3xl animate-[floaty_11s_ease-in-out_infinite]" />
-      </div>
-
-      <div className="w-full max-w-md relative">
+    <div className="min-h-[100vh] flex items-center justify-center px-4 py-10 bg-[radial-gradient(80%_80%_at_50%_10%,rgba(20,184,166,0.18),transparent_60%),radial-gradient(70%_70%_at_20%_80%,rgba(59,130,246,0.10),transparent_60%),linear-gradient(to_bottom,rgba(240,253,250,1),rgba(255,255,255,1))]">
+      <div className="w-full max-w-md">
         {/* Brand header */}
         <div className="mb-6 text-center">
           <div className="mx-auto mb-3 h-12 w-12 rounded-2xl bg-white/80 border border-teal-100 shadow-sm flex items-center justify-center backdrop-blur">
@@ -278,20 +283,6 @@ const LoginForm = () => {
                 <div className="h-px flex-1 bg-slate-200" />
               </div>
 
-              {/* Google placeholder */}
-              <button
-                type="button"
-                onClick={() => toast.info("Google login coming soon ✅")}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white/80 py-3 text-sm font-extrabold text-slate-800 hover:bg-white transition"
-              >
-                <img
-                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-                  alt="Google"
-                  className="h-5 w-5"
-                />
-                Continue with Google
-              </button>
-
               {/* Register */}
               <Link
                 to="/register"
@@ -318,7 +309,7 @@ const LoginForm = () => {
             </div>
           </div>
 
-          {/* animations */}
+          {/* shake keyframes */}
           <style>{`
             @keyframes shake {
               0%, 100% { transform: translateX(0); }
@@ -326,10 +317,6 @@ const LoginForm = () => {
               40% { transform: translateX(6px); }
               60% { transform: translateX(-4px); }
               80% { transform: translateX(4px); }
-            }
-            @keyframes floaty {
-              0%, 100% { transform: translate(0,0) scale(1); }
-              50% { transform: translate(10px,-12px) scale(1.03); }
             }
           `}</style>
         </div>
