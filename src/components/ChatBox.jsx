@@ -1,17 +1,28 @@
 // ChatBox.jsx (Premium Teal / modern bubbles + auto-scroll + enter to send + loading)
 import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import { Send, Loader2, MessageSquare, ShieldCheck } from "lucide-react";
+import {
+  Send,
+  Loader2,
+  MessageSquare,
+  ShieldCheck,
+  Phone,
+  Video,
+} from "lucide-react";
 
+import CallRoom from "./CallRoom";
 const ChatBox = ({ chatId, user }) => {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
+  const [callType, setCallType] = useState("video");
 
   const endRef = useRef(null);
 
   const token = useMemo(() => localStorage.getItem("token"), []);
+  const channelName = `chat-${chatId}`;
 
   const scrollToBottom = () => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -111,9 +122,30 @@ const ChatBox = ({ chatId, user }) => {
             <MessageSquare className="text-teal-700" size={18} />
             <h3 className="text-lg font-semibold text-gray-900">Chat</h3>
           </div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
-            <ShieldCheck size={14} />
-            Safe messaging
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setCallType("audio");
+                setCallOpen(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-700 hover:bg-teal-50"
+            >
+              <Phone size={14} />
+              Audio
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCallType("video");
+                setCallOpen(true);
+              }}
+              className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-teal-700"
+            >
+              <Video size={14} />
+              Video
+            </button>
           </div>
         </div>
         <p className="mt-1 text-sm text-gray-600">
@@ -213,6 +245,14 @@ const ChatBox = ({ chatId, user }) => {
           new line.
         </div>
       </div>
+      {callOpen && (
+        <CallRoom
+          channelName={channelName}
+          userId={user?._id || Date.now()}
+          callType={callType}
+          onClose={() => setCallOpen(false)}
+        />
+      )}
     </div>
   );
 };
