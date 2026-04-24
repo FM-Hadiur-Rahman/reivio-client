@@ -145,7 +145,7 @@ const Footer = () => {
 
               <div className="space-y-1.5 text-sm text-slate-600">
                 <p>📧 help@reivio.com</p>
-                <p>📱 WhatsApp: +880-1763558585</p>
+                <p>📱 WhatsApp: +880-1756434543</p>
                 <Link
                   to="/emergency"
                   className="inline-flex items-center gap-1 text-rose-600 hover:text-rose-700 font-semibold"
