@@ -71,6 +71,7 @@ const AdminLayout = ({ children }) => {
       { to: "/admin/listings", label: "Listings", icon: "🏠" },
       { to: "/admin/bookings", label: "Bookings", icon: "📅" },
       { to: "/admin/user-breakdown", label: "User Breakdown", icon: "👥" },
+      { to: "/admin/direct-chats", label: "Direct Chats", icon: "💬" },
 
       { section: "Verification" },
       { to: "/admin/kyc", label: "KYC Verifications", icon: "🪪" },

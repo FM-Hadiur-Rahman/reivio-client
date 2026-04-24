@@ -14,7 +14,7 @@ import MaintenancePage from "./pages/MaintenancePage";
 import MainLayout from "./layouts/MainLayout";
 
 import ProtectedRouteWrapper from "./components/ProtectedRouteWrapper";
-
+import DirectChatsPage from "./pages/DirectChatsPage";
 // General Pages
 import Home from "./pages/Home";
 import ListingsPage from "./pages/ListingsPage";
@@ -86,6 +86,7 @@ import AdminUserDetail from "./pages/AdminUserDetail";
 import AdminSearch from "./pages/AdminSearch";
 import AdminListingDetails from "./pages/AdminListingDetails";
 import AdminTripDetails from "./pages/AdminTripDetails";
+import AdminLayout from "./components/AdminLayout";
 
 import TripDetailPage from "./pages/TripDetailPage";
 import TripPaymentSuccess from "./pages/TripPaymentSuccess";
@@ -529,6 +530,22 @@ function App() {
           <Route
             path="/trip-payment-success"
             element={<TripPaymentSuccess />}
+          />
+          <Route
+            path="/admin/direct-chats"
+            element={
+              <AdminLayout>
+                <DirectChatsPage />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/direct-chats"
+            element={
+              <ProtectedRouteWrapper>
+                <DirectChatsPage />
+              </ProtectedRouteWrapper>
+            }
           />
 
           <Route path="/terms" element={<TermsPage />} />
