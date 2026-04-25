@@ -24,6 +24,10 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
+          VITE_AGORA_APP_ID: ${{ secrets.VITE_AGORA_APP_ID }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -32,16 +36,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 1) Upload everything EXCEPT html with long cache
-      - name: Deploy assets (long cache)
+      - name: Deploy assets long cache
         run: |
           aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} \
             --delete \
             --exclude "*.html" \
             --cache-control "public,max-age=31536000,immutable"
 
-      # 2) Upload html with no-cache (so CF always revalidates)
-      - name: Deploy HTML (no cache)
+      - name: Deploy HTML no cache
         run: |
           aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }} \
             --exclude "*" \
@@ -49,8 +51,7 @@ jobs:
             --cache-control "no-cache,no-store,must-revalidate" \
             --metadata-directive REPLACE
 
-      # 3) Invalidate only index.html (usually enough for SPA)
-      - name: CloudFront invalidation (index.html)
+      - name: CloudFront invalidation
         env:
           CF_DIST_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
         run: |
@@ -60,6 +61,6 @@ jobs:
 
           aws cloudfront create-invalidation \
             --distribution-id "$CF_ID" \
-            --paths "/index.html"
+            --paths "/index.html" "/*"
 
           echo "✅ CloudFront invalidation requested"
